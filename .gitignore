@@ -14,3 +14,9 @@
 compile_commands.json
 .clangd/
 .cache/
+
+# IDE files
+.vscode
+.history
+
+menu/core/generated
