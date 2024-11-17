@@ -1,0 +1,17 @@
+{
+    "userspace_version": "1.0",
+    "build_targets": [
+        [
+            "fingerpunch/pinkiesout/v3_1",
+            "default"
+        ],
+        [
+            "boardsource/lulu/avr",
+            "steve973"
+        ],
+        [
+            "sofle/rev1",
+            "rgb_via"
+        ]
+    ]
+}
