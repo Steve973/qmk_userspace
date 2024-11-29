@@ -16,69 +16,13 @@
 
 #pragma once
 
-#include "color.h"
 #include "gpio.h"
+#include "color.h"
+#include "quantum/keycodes.h"
 
 #define CALIBRATION_DURATION_MS 5000
 #define CALIBRATION_SAMPLE_COUNT 100
-#define ANGLE_DIVISIONS 24
-
-#ifndef M_PI
-    #define M_PI 3.14159265358979323846
-#endif
-
-typedef struct {
-    int8_t  ordinal;
-    int16_t angle;
-} axis_values;
-
-/**
- * Represents the axis directions in a cartesian coordinate system,
- * and their corresponding angle values.
- */
-typedef enum {
-    AXIS_RIGHT = 0,    // Positive x-axis
-    AXIS_UP    = 90,   // Positive y-axis
-    AXIS_LEFT  = 180,  // Negative x-axis
-    AXIS_DOWN  = 270   // Negative y-axis
-} axis_directions;
-
-/**
- * Represents the directions of the joystick, which are used to
- * determine the angle of the joystick. This is a lookup table
- * that is better for resource-constrained processors at the
- * expense of resolution.
- */
-typedef enum {
-    // East quadrant I
-    DIR_E = AXIS_RIGHT,  // East (0°)
-    DIR_E15 = 15,        // East + 15°
-    DIR_E30 = 30,        // East + 30°
-    DIR_E45 = 45,        // East + 45°
-    DIR_E60 = 60,        // East + 60°
-    DIR_E75 = 75,        // East + 75°
-    // North quadrant II
-    DIR_N = AXIS_UP,     // North (90°)
-    DIR_N15 = 105,       // North + 15°
-    DIR_N30 = 120,       // North + 30°
-    DIR_N45 = 135,       // North + 45°
-    DIR_N60 = 150,       // North + 60°
-    DIR_N75 = 165,       // North + 75°
-    // West quadrant III
-    DIR_W = AXIS_LEFT,   // West (180°)
-    DIR_W15 = 195,       // West + 15°
-    DIR_W30 = 210,       // West + 30°
-    DIR_W45 = 225,       // West + 45°
-    DIR_W60 = 240,       // West + 60°
-    DIR_W75 = 255,       // West + 75°
-    // South quadrant IV
-    DIR_S = AXIS_DOWN,   // South (270°)
-    DIR_S15 = 285,       // South + 15°
-    DIR_S30 = 300,       // South + 30°
-    DIR_S45 = 315,       // South + 45°
-    DIR_S60 = 330,       // South + 60°
-    DIR_S75 = 345        // South + 75°
-} stick_direction_t;
+#define FIXED_POINT_SCALE 1024
 
 /**
  * Represents the analog joystick directions, which is useful for
@@ -98,12 +42,13 @@ typedef enum {
  * interpreted.  The joystick can be used to emulate arrow keys,
  * W, A, S, and D for movement (similar to arrow keys), or it
  * can be used as-is, with analog values adjusted for the
- * configured range.
+ * configured range, or to move the mouse pointer.
  */
 typedef enum {
     JOYSTICK_SM_ANALOG, // stick mode: analog
     JOYSTICK_SM_WASD,   // stick mode: wasd
     JOYSTICK_SM_ARROWS, // stick mode: arrow keys
+    JOYSTICK_SM_MOUSE,  // stick mode: mouse
     JOYSTICK_SM_END     // end marker
 } joystick_stick_modes;
 
@@ -114,9 +59,15 @@ typedef enum {
  */
 typedef struct joystick_calibration {
     int16_t x_neutral, x_min, x_max, y_neutral, y_min, y_max;
-    int16_t deadzone_inner, deadzone_outer;
+    int16_t deadzone_inner, deadzone_outer, scale_factor;
 } joystick_calibration_t;
 
+/**
+ * Represents the joystick configuration, including the mode and
+ * the electrical direction is installed in the physical "up"
+ * direction.
+ */
+extern joystick_calibration_t joystick_calibration;
 
 /**
  * Used to hold x and y coordinates of the joystick for easy
@@ -145,6 +96,8 @@ typedef struct {
     int16_t up_orientation;
 } fp_joystick_config_t;
 
+extern fp_joystick_config_t joystick_config;
+
 /**
  * The structure for blinking/pulsing the RGB of the key for a given
  * keycode. The keycode determines which key blinks/pulses, the cycle
@@ -169,8 +122,6 @@ typedef struct {
     int16_t  actuation_point, deadzone_inner, deadzone_outer, stick_timer_ms;
     int8_t   button_count, out_min, out_max, resolution_bits;
     uint16_t raw_min, raw_neutral, raw_max;
-    bool     is_lite;
-    pin_t    axis_pins[6];
 } joystick_profile_t;
 
 /**
@@ -181,7 +132,7 @@ typedef struct {
  * The actuation point is set to 40, and the deadzones are set
  * to 60, for a comfortable range to avoid accidental inputs.
  */
-#define JS_10BIT_SYM8BIT_BASE(is_lite_value) ((const joystick_profile_t) { \
+#define JS_10BIT_SYM8BIT ((const joystick_profile_t) { \
     .actuation_point = 40, \
     .button_count = 0, \
     .deadzone_inner = 60, \
@@ -192,29 +143,38 @@ typedef struct {
     .raw_neutral = 511, \
     .raw_max = 1023, \
     .resolution_bits = 8, \
-    .stick_timer_ms = 5, \
-    .is_lite = is_lite_value, \
-    .axis_pins = { \
-        VIK_GPIO_1, /* X axis */ \
-        VIK_GPIO_2, /* Y axis */ \
-        NO_PIN,     /* Z axis */ \
-        NO_PIN,     /* Rx axis */ \
-        NO_PIN,     /* Ry axis */ \
-        NO_PIN      /* Rz axis */ \
-    } \
+    .stick_timer_ms = 10 \
 })
 
-// Non-lite version
-#define JS_10BIT_SYM8BIT JS_10BIT_SYM8BIT_BASE(false)
+#ifdef JOYSTICK_ENABLE
+  #define JS_MODE             JOYSTICK_SM_ARROWS
+  #define JS_UP_ORIENTATION   JS_RIGHT
+  #define JOYSTICK_PROFILE    JS_10BIT_SYM8BIT
+#endif
 
-// Lite version (for boards with limited math capabilities)
-#define JS_10BIT_SYM8BIT_LITE JS_10BIT_SYM8BIT_BASE(true)
+/**
+ * Represents the joystick profile, including the parameters that are
+ * necessary for calibration and usage (e.g., adjustments like scaling
+ * and rotation if the joystick is installed with its electrical "up"
+ * direction in a physical orientation other than "up").
+ */
+extern joystick_profile_t js_profile;
 
 int8_t get_stick_up_orientation(void);
-void   set_stick_up_orientation(joystick_up_orientation up_orientation);
+void set_stick_up_orientation(joystick_up_orientation up_orientation);
+int16_t get_stick_up_angle(void);
 int8_t get_stick_mode(void);
-void   step_stick_mode(void);
-int8_t get_stick_direction(bool rotate);
-void   calibrate_range(void);
-void   fp_post_init_joystick(void);
-void   fp_process_joystick(void);
+void step_stick_mode(void);
+void calibrate_range(void);
+void calibrate_neutral_values(void);
+uint8_t get_led_index(uint16_t keycode);
+void blink_key(blink_params_t blink_params, bool reset);
+int16_t read_x_axis(void);
+int16_t read_y_axis(void);
+joystick_coordinate_t apply_scaling_and_deadzone(joystick_coordinate_t raw_coordinates);
+joystick_coordinate_t read_joystick_coordinates(void);
+joystick_coordinate_t read_joystick(void);
+int8_t calculate_direction(bool rotate);
+void joystick_adjust_oled_brightness(void);
+void fp_post_init_joystick(void);
+void fp_process_joystick(void);

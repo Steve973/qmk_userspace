@@ -43,5 +43,10 @@
         "type" : "single",
         "name" : "JOYSTICK_ENABLE",
         "user_input": "Do you have a joystick?"
+    },
+    {
+        "type" : "single",
+        "name" : "CONSOLE_ENABLE",
+        "user_input": "Do you want to enable console output?"
     }
 ]
