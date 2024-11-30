@@ -87,15 +87,27 @@ void show_debug_info(void) {
 }
 
 void test_piezo(void) {
+    defer_exec(100, play_test_song, NULL);
+}
+
+uint32_t play_test_song(uint32_t trigger_time, void* cb_arg) {
     #ifdef AUDIO_ENABLE
-    // Play ascending tones
-    float test_song[][2] = {
-        {NOTE_C4, 200},
-        {NOTE_E4, 200},
-        {NOTE_G4, 200},
-        {NOTE_C5, 4}
-    };
-    
-    PLAY_SONG(test_song);
+    static float fp_startup_dark[][2] = SONG(
+        HALF_DOT_NOTE(_B5), 
+        QUARTER_NOTE(_B5), 
+        HALF_NOTE(_E6),
+        HALF_NOTE(_REST),
+        QUARTER_NOTE(_C6),
+        QUARTER_NOTE(_REST),
+        QUARTER_NOTE(_G5),
+        QUARTER_NOTE(_E5),
+        QUARTER_NOTE(_F5),
+        QUARTER_NOTE(_GS5),
+        QUARTER_NOTE(_G5),
+        QUARTER_NOTE(_F5),
+        WHOLE_NOTE(_G5)
+    );
+    audio_play_melody(&fp_startup_dark, sizeof(fp_startup_dark) / sizeof(fp_startup_dark[0]), false);
     #endif
+    return 0; // Done playing
 }

@@ -18,6 +18,7 @@
 
 #include "menu/common/fp_menu_common.h"
 #include "quantum/audio/audio.h"
+#include "quantum/deferred_exec.h"
 #include "version.h"
 
 #define MAX_INFO_STR 32
@@ -33,3 +34,4 @@ void reset_eeprom(void);
 void enter_bootloader(void);
 void show_debug_info(void);
 void test_piezo(void);
+uint32_t play_test_song(uint32_t trigger_time, void* cb_arg);
