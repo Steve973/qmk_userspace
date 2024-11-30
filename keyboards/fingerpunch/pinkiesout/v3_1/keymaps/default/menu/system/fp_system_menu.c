@@ -109,5 +109,5 @@ uint32_t play_test_song(uint32_t trigger_time, void* cb_arg) {
     );
     audio_play_melody(&fp_startup_dark, sizeof(fp_startup_dark) / sizeof(fp_startup_dark[0]), false);
     #endif
-    return 0; // Done playing
+    return 0;
 }

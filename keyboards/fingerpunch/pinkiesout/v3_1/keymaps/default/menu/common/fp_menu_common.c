@@ -25,18 +25,68 @@ static struct {
 extern const size_t MAIN_MENU_SIZE;
 
 static bool in_menu_mode = false;
+static deferred_token menu_timeout_token = INVALID_DEFERRED_TOKEN;
+uint16_t menu_timeout_ms = 30000;
+uint32_t last_menu_activity = 0;
+
+/**
+ * @brief Update the menu activity timer.
+ * 
+ * Updates the menu activity timer to the current time and schedules
+ * the next timer check in 100ms.
+ */
+static void update_menu_activity(void) {
+    last_menu_activity = timer_read32();
+}
+
+/**
+ * @brief Check the menu timeout.
+ * 
+ * Checks the menu timeout and returns the time until the next check.
+ * If the menu has been inactive for the timeout period, this will
+ * exit menu mode.
+ * 
+ * @param trigger_time The time the timer was triggered.
+ * @param cb_arg The callback argument.
+ * @return The time until the next check.
+ */
+uint32_t check_menu_timeout(uint32_t trigger_time, void* cb_arg) {
+    uint32_t elapsed = timer_read32() - last_menu_activity;
+    if (elapsed >= menu_timeout_ms) {
+        set_in_menu_mode(false);
+        return 0;
+    }
+
+    // Draw decay line using fixed point math
+    uint8_t height = OLED_DISPLAY_HEIGHT;
+    // Convert to 8.8 fixed point: (elapsed << 8) / menu_timeout_ms
+    uint16_t progress = (elapsed << 8) / menu_timeout_ms;
+    // 256 - progress gives inverted percentage in 8.8
+    uint16_t remaining_fixed = 256 - progress;
+    // Scale height by remaining (in 8.8), then shift back
+    uint8_t remaining = (height * remaining_fixed) >> 8;
+    
+    // Draw vertical line at rightmost column
+    for (uint8_t i = 0; i < height; i++) {
+        oled_write_pixel(OLED_DISPLAY_WIDTH-1, i, i < remaining);
+    }
+
+    // Check again in 100 ms
+    return 100;
+}
 
 /**
  * @brief Toggles the RGB matrix lighting to indicate to indicate menu mode.
  * 
  * When invoked with "true", indicating that we are entering menu mode, this function
- * saves the current RGB matrix state and sets all keys to "HSV_AZURE" with a "breathing"
+ * saves the current RGB matrix state and sets all keys to "HSV_BLUE" with a "breathing"
  * animation.  When invoked with "false", indicating that we are leaving menu mode, this
  * function restores the RGB matrix state to the saved state.
  * 
  * @param enabled True to enable menu mode lighting, false to return to saved lighting.
  */
 void set_menu_mode_lighting(bool enabled) {
+    #ifdef RGB_MATRIX_ENABLE
     if (enabled) {
         // Temporarily change all keys to blue and "breathing" animation
         // to indicate that we are in menu mode and the keys are "asleep"
@@ -45,6 +95,7 @@ void set_menu_mode_lighting(bool enabled) {
         // Restore original keyboard LED colors
         rgb_matrix_reload_from_eeprom();
     }
+    #endif
 }
 
 /**
@@ -59,16 +110,18 @@ void set_menu_mode_lighting(bool enabled) {
  * @param menu_mode True to enter menu mode, false to exit.
  */
 void set_in_menu_mode(bool menu_mode) {
-    in_menu_mode = menu_mode;
-    #ifdef RGB_MATRIX_ENABLE
-    set_menu_mode_lighting(menu_mode);
-    #endif
     if (menu_mode) {
+        in_menu_mode = menu_mode;
         menu_stack_home();
+        update_menu_activity();
+        menu_timeout_token = defer_exec(100, check_menu_timeout, NULL);
     } else {
-        init_menu_stack();
+        cancel_deferred_exec(menu_timeout_token);
         clear_keyboard();
+        init_menu_stack();
+        in_menu_mode = menu_mode;
     }
+    set_menu_mode_lighting(menu_mode);
 }
 
 /**
@@ -234,7 +287,7 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
                 menu_stack_pop();
                 break;
         }
-        display_current_menu();
+        update_menu_activity();
     }
     return false;
 }

@@ -18,7 +18,6 @@
 
 #include "menu/common/fp_menu_common.h"
 #include "quantum/audio/audio.h"
-#include "quantum/deferred_exec.h"
 #include "version.h"
 
 #define MAX_INFO_STR 32

@@ -21,6 +21,7 @@
 #include "fingerpunch/pinkiesout/v3_1/config.h"
 #include "keyboards/fingerpunch/src/fp_rgb_common.h"
 #include "quantum/rgb_matrix/rgb_matrix.h"
+#include "quantum/deferred_exec.h"
 
 #define MAX_MENU_DEPTH 5
 #define ITEMS_PER_PAGE 10
@@ -45,6 +46,8 @@ typedef struct menu_state {
     uint8_t item_count;
 } menu_state_t;
 
+extern uint16_t menu_timeout_ms;
+extern uint32_t last_menu_activity;
 extern const menu_item_t MAIN_MENU[];
 
 void init_menu_stack(void);
