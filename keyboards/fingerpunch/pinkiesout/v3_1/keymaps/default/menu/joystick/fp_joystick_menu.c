@@ -32,6 +32,38 @@ void show_joystick_menu(void) {
 }
 
 void detect_orientation(void) {
-    // Detect the orientation of the joystick
-}
+    // Clear and show initial instructions
+    oled_clear();
+    oled_set_cursor(0, 0);
+    oled_write_P(PSTR("Set JS Orientation"), false);
+    oled_set_cursor(0, 1);
+    oled_write_P(PSTR(""), false);
+    oled_set_cursor(0, 2);
+    oled_write_P(PSTR("Hold JS in physical"), false);
+    oled_set_cursor(0, 3);
+    oled_write_P(PSTR("UP direction..."), false);
+    oled_set_cursor(0, 4);
+    oled_write_P(PSTR(""), false);
+    oled_render_dirty(true);
+    wait_ms(1000);
 
+    // Wait for movement or escape
+    if (wait_for_js_movement(10000, 85)) {
+        int8_t up_direction = calculate_direction(false);
+        if (up_direction != JS_NEUTRAL) {
+            joystick_config.up_orientation = up_direction;
+            fp_kb_config_user.js_config = joystick_config;
+            fp_kb_config_save();
+
+            // Show confirmation
+            oled_set_cursor(0, 5);
+            oled_write_P(PSTR("Orientation set!"), false);
+            oled_render_dirty(true);
+            wait_ms(1000);
+        }
+    }
+
+    // Return to menu
+    oled_clear();
+    display_current_menu();
+}

@@ -15,15 +15,17 @@
  */
 
 #include QMK_KEYBOARD_H
-#include "fp_joystick.h"
-#include "menu/common/fp_menu_common.h"
-#include "fingerpunch/pinkiesout/v3_1/v3_1.h"
-#include "fingerpunch/pinkiesout/v3_1/config.h"
 #include "deferred_exec.h"
 #include "quantum/action.h"
 #include "quantum/quantum_keycodes.h"
 #include "quantum/rgb_matrix/rgb_matrix.h"
 #include "quantum/wpm.h"
+#include "debug.h"
+#include "print.h"
+#include "fingerpunch/pinkiesout/v3_1/v3_1.h"
+#include "fingerpunch/pinkiesout/v3_1/config.h"
+#include "fp_joystick.h"
+#include "menu/common/fp_menu_common.h"
 
 // Defines names for use in layer keycodes and the keymap
 enum layer_names {
@@ -126,6 +128,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 void keyboard_post_init_user() {
+    debug_enable = true;
     #ifdef JOYSTICK_ENABLE
     fp_post_init_joystick();
     #endif
@@ -140,7 +143,7 @@ void housekeeping_task_user(void) {
 #ifdef OLED_ENABLE
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    oled_set_brightness(64);
+    oled_set_brightness(50);
     return OLED_ROTATION_180;
 }
 
@@ -343,29 +346,34 @@ void render_key_rates(void) {
 }
 
 bool oled_task_user(void) {
-    if (get_in_menu_mode()) {
-        display_current_menu();
-    } else {
-        oled_set_cursor(0, 1);
-        render_layer_status();
-        oled_set_cursor(0, 2);
-        render_joystick_status();
-        oled_set_cursor(0, 3);
-        render_rgb_status();
-        oled_set_cursor(0, 4);
-        render_key_rates();
-        oled_set_cursor(0, 5);
-        render_wpm();
-        oled_set_cursor(0, 6);
-        render_keycount();
-        oled_set_cursor(0, 7);
-        render_mod_status();
-        oled_set_cursor(0, 8);
-        render_kb_led_status();
-        oled_set_cursor(0, 9);
-        render_uptime();
-        oled_set_cursor(0, 10);
-        render_logo();
+    static int32_t display_timer = 0;
+    // Update display every half-second
+    if (timer_read32() - display_timer >= 200) {
+        display_timer = timer_read32();
+        if (get_in_menu_mode()) {
+            display_current_menu();
+        } else {
+            oled_set_cursor(0, 1);
+            render_layer_status();
+            oled_set_cursor(0, 2);
+            render_joystick_status();
+            oled_set_cursor(0, 3);
+            render_rgb_status();
+            oled_set_cursor(0, 4);
+            render_key_rates();
+            oled_set_cursor(0, 5);
+            render_wpm();
+            oled_set_cursor(0, 6);
+            render_keycount();
+            oled_set_cursor(0, 7);
+            render_mod_status();
+            oled_set_cursor(0, 8);
+            render_kb_led_status();
+            oled_set_cursor(0, 9);
+            render_uptime();
+            oled_set_cursor(0, 10);
+            render_logo();
+        }
     }
     return false;
 }

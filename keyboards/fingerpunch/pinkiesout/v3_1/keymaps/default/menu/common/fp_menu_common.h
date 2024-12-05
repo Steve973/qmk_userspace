@@ -18,10 +18,11 @@
 
 #include "oled_driver.h"
 #include "quantum.h"
-#include "fingerpunch/pinkiesout/v3_1/config.h"
-#include "keyboards/fingerpunch/src/fp_rgb_common.h"
 #include "quantum/rgb_matrix/rgb_matrix.h"
 #include "quantum/deferred_exec.h"
+#include "keyboards/fingerpunch/pinkiesout/v3_1/config.h"
+#include "keyboards/fingerpunch/src/fp_rgb_common.h"
+#include "fp_joystick.h"
 
 #define MAX_MENU_DEPTH 5
 #define ITEMS_PER_PAGE 10

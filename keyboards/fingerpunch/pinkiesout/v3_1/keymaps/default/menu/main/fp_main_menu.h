@@ -23,4 +23,3 @@
 #include "menu/system/fp_system_menu.h"
 
 void show_kb_stats(void);
-void exit_menu(void);

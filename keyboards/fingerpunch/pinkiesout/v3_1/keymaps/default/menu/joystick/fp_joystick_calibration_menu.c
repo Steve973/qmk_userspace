@@ -30,9 +30,61 @@ void show_joystick_calibration_menu(void) {
 }
 
 void calibrate_joystick_neutral(void) {
-    // Calibrate the joystick neutral values
+    // Clear and show initial instructions
+    oled_clear();
+    oled_set_cursor(0, 0);
+    oled_write_P(PSTR("JS Neutral Cal"), false);
+    oled_set_cursor(0, 1);
+    oled_write_P(PSTR(""), false);
+    oled_set_cursor(0, 2);
+    oled_write_P(PSTR("Do not touch JS"), false);
+    oled_set_cursor(0, 3);
+    oled_write_P(PSTR("while calibrating..."), false);
+    oled_set_cursor(0, 4);
+    oled_write_P(PSTR(""), false);
+    oled_render_dirty(true);
+    wait_ms(1000);
+
+    // Run calibration
+    calibrate_neutral_values(false);
+
+    // Show completion message
+    oled_set_cursor(0, 5);
+    oled_write_P(PSTR("Calibration complete!"), false);
+    oled_render_dirty(true);
+    
+    // Show confirmation for 2 seconds before returning
+    wait_ms(2000);
+    oled_clear();
+    display_current_menu();
 }
 
 void calibrate_joystick_range(void) {
-    // Calibrate the joystick range
+    // Clear and show initial instructions
+    oled_clear();
+    oled_set_cursor(0, 0);
+    oled_write_P(PSTR("JS Range Cal"), false);
+    oled_set_cursor(0, 1);
+    oled_write_P(PSTR(""), false);
+    oled_set_cursor(0, 2);
+    oled_write_P(PSTR("Rotate the JS"), false);
+    oled_set_cursor(0, 3);
+    oled_write_P(PSTR("at full range..."), false);
+    oled_set_cursor(0, 4);
+    oled_write_P(PSTR(""), false);
+    oled_render_dirty(true);
+    wait_ms(1000);
+
+    // Run calibration
+    calibrate_range(false);
+
+    // Show completion message
+    oled_set_cursor(0, 5);
+    oled_write_P(PSTR("Calibration complete!"), false);
+    oled_render_dirty(true);
+    
+    // Show confirmation for 2 seconds before returning
+    wait_ms(2000);
+    oled_clear();
+    display_current_menu();
 }

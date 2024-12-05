@@ -15,7 +15,6 @@
  */
 
 #include "fp_menu_common.h"
-#include "fp_joystick.h"
 
 static struct {
     menu_state_t states[MAX_MENU_DEPTH];
@@ -32,8 +31,7 @@ uint32_t last_menu_activity = 0;
 /**
  * @brief Update the menu activity timer.
  * 
- * Updates the menu activity timer to the current time and schedules
- * the next timer check in 100ms.
+ * Updates the menu activity timer to the current time.
  */
 static void update_menu_activity(void) {
     last_menu_activity = timer_read32();
@@ -66,7 +64,8 @@ uint32_t check_menu_timeout(uint32_t trigger_time, void* cb_arg) {
     // Scale height by remaining (in 8.8), then shift back
     uint8_t remaining = (height * remaining_fixed) >> 8;
     
-    // Draw vertical line at rightmost column
+    // Draw vertical line at rightmost column, and as the remaining
+    // time decreases, bottom pixels turn off first.
     for (uint8_t i = 0; i < height; i++) {
         oled_write_pixel(OLED_DISPLAY_WIDTH-1, i, i < remaining);
     }
@@ -250,6 +249,7 @@ void display_current_menu(void) {
             oled_write_P(PSTR("Next >"), false);
         }
     }
+    oled_render_dirty(true);
 }
 
 /**
@@ -265,16 +265,19 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
         menu_state_t* current = menu_stack_current();
         switch (keycode) {
+            case KC_W:
             case KC_UP:
                 if (current->current_index > 0) {
                     current->current_index--;
                 }
                 break;
+            case KC_S:
             case KC_DOWN:
                 if (current->current_index < current->item_count - 1) {
                     current->current_index++;
                 }
                 break;
+            case KC_D:
             case KC_ENTER:
             case KC_RIGHT:
                 const menu_item_t* item = &current->items[current->current_index];
@@ -282,6 +285,7 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
                     item->action();
                 }
                 break;
+            case KC_A:
             case KC_ESC:
             case KC_LEFT:
                 menu_stack_pop();

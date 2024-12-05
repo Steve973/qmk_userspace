@@ -14,153 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include "fp_joystick.h"
-#include "eeprom.h"
-#include "gpio.h"
-#include "keycodes.h"
-#include "quantum.h"
-#include "fingerpunch/pinkiesout/v3_1/config.h"
 
-joystick_profile_t js_profile = JOYSTICK_PROFILE;
-
-typedef void (*stick_mode_handler)(int8_t x, int8_t y);
-
-static uint32_t stick_timer = 0;
-
-static void handle_analog(int8_t x, int8_t y);
-static void handle_wasd(int8_t x, int8_t y);
-static void handle_arrows(int8_t x, int8_t y);
-
+joystick_profile_t js_profile_raw = JOYSTICK_PROFILE_RAW;
+joystick_profile_t js_profile_out = JOYSTICK_PROFILE_OUT;
 joystick_calibration_t joystick_calibration;
 fp_joystick_config_t joystick_config;
+fp_config_user_t fp_kb_config_user;
 
-/**
- * @brief Array of joystick mode handlers.
- *
- * This constant array defines the different handling modes for the joystick.
- * Each mode corresponds to a specific function that processes the joystick input
- * in a different way. The available modes are:
- * - `handle_analog`: Handles analog joystick input.
- * - `handle_wasd`: Maps joystick input to WASD keys.
- * - `handle_arrows`: Maps joystick input to arrow keys.
- */
-static const stick_mode_handler stick_modes[] = {
-    handle_analog,
-    handle_wasd,
-    handle_arrows
-};
-
-/**
- * @brief Simulates a key pressed / released event identical to a physically operated key.
- *
- * Simulates a physically pressed or released key event by executing the corresponding
- * action. This function is used to simulate key events based on joystick input.
- */
-static void simulate_key_event(uint16_t keycode, bool pressed) {
-    keyrecord_t event = {
-        .event.pressed = pressed,
-        .event.time = timer_read(),
-        .event.key = (keypos_t){0, 0},
-        .event.type = KEY_EVENT,
-        .tap.count = 1
-    };
-
-    // This feels like "ridin' dirty" but it works, and it is the only way I know of that
-    // will let the regular keypress path process this "virtual keypress" event.
-    if (!process_record_user(keycode, &event)) {
-        return;  // Menu handled it
-    }
-
-    action_t action;
-    action.code = ACTION(ACT_MODS, keycode);
-    process_action(&event, action);
-}
-
-/**
- * @brief Handles the registration and unregistration of keys based on joystick axis movement.
- *
- * This function determines the current and previous states of the joystick axis and registers
- * or unregisters the corresponding keys based on the actuation point.
- *
- * @param curr The current axis value.
- * @param prev The previous axis value.
- * @param pos_key The key to register when the axis value is positive.
- * @param neg_key The key to register when the axis value is negative.
- */
-static void handle_axis(int8_t curr, int8_t prev, uint16_t pos_key, uint16_t neg_key) {
-    int8_t curr_state = (curr > js_profile.actuation_point) - (curr < -js_profile.actuation_point);
-    int8_t prev_state = (prev > js_profile.actuation_point) - (prev < -js_profile.actuation_point);
-    bool should_register = (curr_state != 0);
-    if (curr_state != prev_state) {
-        uint16_t key_to_handle = (should_register) ?
-            (curr_state > 0 ? pos_key : neg_key) :
-            (prev_state > 0 ? pos_key : neg_key);
-        simulate_key_event(key_to_handle, should_register);
-        dprintf("key %d %s\n", key_to_handle, should_register ? "pressed" : "released");
-    }
-}
-
-/**
- * @brief Handles the registration and unregistration of four keys based on joystick movement.
- *
- * This function processes the joystick x and y values and registers or unregisters
- * the corresponding keys (up, left, down, right) based on the actuation point.
- *
- * @param x The x-axis value.
- * @param y The y-axis value.
- * @param u The key to register when the y-axis value is positive (up).
- * @param l The key to register when the x-axis value is negative (left).
- * @param d The key to register when the y-axis value is negative (down).
- * @param r The key to register when the x-axis value is positive (right).
- */
-static void handle_joystick_keys_4(int8_t x, int8_t y, uint16_t u, uint16_t l, uint16_t d, uint16_t r) {
-    static int8_t px, py;
-    handle_axis(y, py, u, d);
-    handle_axis(x, px, r, l);
-    px = x;
-    py = y;
-}
-
-/**
- * @brief Handles analog joystick input.
- *
- * This function sets the joystick axis values based on the input x and y values.
- *
- * @param x The x-axis value.
- * @param y The y-axis value.
- */
-static void handle_analog(int8_t x, int8_t y) {
-    joystick_set_axis(0, x);
-    joystick_set_axis(1, y);
-}
-
-/**
- * @brief Handles WASD key input based on joystick movement.
- *
- * This function maps the joystick x and y values to the corresponding WASD keys.
- *
- * @param x The x-axis value.
- * @param y The y-axis value.
- */
-static void handle_wasd(int8_t x, int8_t y) {
-    handle_joystick_keys_4(x, y, KC_W, KC_A, KC_S, KC_D);
-}
-
-/**
- * @brief Handles arrow key input based on joystick movement.
- *
- * This function maps the joystick x and y values to the corresponding arrow keys.
- * It also prints a message every second to indicate that it is handling arrow keys.
- *
- * @param x The x-axis value.
- * @param y The y-axis value.
- */
-static void handle_arrows(int8_t x, int8_t y) {
-    handle_joystick_keys_4(x, y, KC_UP, KC_LEFT, KC_DOWN, KC_RGHT);
-}
+static uint32_t stick_timer = 0;
 
 /**
  * @brief Gets the orientation of the joystick's direction facing "up" from the perspective
@@ -259,15 +121,41 @@ int16_t get_stick_up_angle(void) {
     return joystick_config.up_orientation * 90;
 }
 
-/**
- * @brief Handles the joystick input and processes it according to the current mode.
- *
- * This function reads the joystick input, processes it based on the current mode,
- * and updates the joystick axes accordingly.
- */
-static void handle_joystick(void) {
-    joystick_coordinate_t coordinates = read_joystick();
-    stick_modes[joystick_config.mode](coordinates.x_coordinate, coordinates.y_coordinate);
+void eeconfig_init_user_datablock(void) {
+    fp_kb_config_user = (fp_config_user_t) {
+        .js_config = (fp_joystick_config_t) {
+            .mode = JOYSTICK_SM_ARROWS,
+            .up_orientation = JS_UP,
+            .read_interval_ms = STICK_READ_INTERVAL_MS_DEFAULT
+        },
+        .js_calibration = (joystick_calibration_t) {
+            .x_neutral = js_profile_out.neutral,
+            .x_min = js_profile_out.min,
+            .x_max = js_profile_out.max,
+            .y_neutral = js_profile_out.neutral,
+            .y_min = js_profile_out.min,
+            .y_max = js_profile_out.max,
+            .deadzone_inner_percent = DEADZONE_INNER_PERCENT_DEFAULT,
+            .deadzone_outer_percent = DEADZONE_OUTER_PERCENT_DEFAULT,
+            .last_neutral_cal = 0,
+            .last_range_cal = 0,
+            .shift_factor = js_profile_raw.bits - js_profile_out.bits
+        },
+        .config_version = FP_USER_CONFIG_VERSION
+    };
+    fp_kb_config_save();
+}
+
+bool fp_kb_config_load(void) {
+    eeconfig_read_user_datablock(&fp_kb_config_user);
+    dprintf("Config version: %d, wanted version: %d, match: %d\n", fp_kb_config_user.config_version, FP_USER_CONFIG_VERSION, fp_kb_config_user.config_version == FP_USER_CONFIG_VERSION);
+    dprintf("Config size: %d, wanted size: %d, match: %d\n", sizeof(fp_kb_config_user), EECONFIG_USER_DATA_SIZE, sizeof(fp_kb_config_user) == EECONFIG_USER_DATA_SIZE);
+    return ((fp_kb_config_user.config_version == FP_USER_CONFIG_VERSION) &&
+            (sizeof(fp_kb_config_user) == EECONFIG_USER_DATA_SIZE));
+}
+
+void fp_kb_config_save(void) {
+    eeconfig_update_user_datablock(&fp_kb_config_user);
 }
 
 /**
@@ -278,9 +166,19 @@ static void handle_joystick(void) {
  * installed "up" orientation.
  */
 void fp_post_init_joystick(void) {
-    calibrate_neutral_values();
-    joystick_config.mode = JS_MODE;
-    joystick_config.up_orientation = JS_UP_ORIENTATION;
+    bool config_valid = fp_kb_config_load();
+    if (!config_valid) {
+        eeconfig_init_user_datablock();
+    }
+    joystick_config = fp_kb_config_user.js_config;
+    joystick_calibration = fp_kb_config_user.js_calibration;
+    calibrate_neutral_values(true);
+    dprintf("JS mode: %d, up: %d\n", 
+            fp_kb_config_user.js_config.mode,
+            fp_kb_config_user.js_config.up_orientation);
+    dprintf("Neutral x,y: %d,%d\n",
+            fp_kb_config_user.js_calibration.x_neutral,
+            fp_kb_config_user.js_calibration.y_neutral);
 }
 
 /**
@@ -290,7 +188,7 @@ void fp_post_init_joystick(void) {
  * processes the joystick input by calling the handle_joystick function.
  */
 void fp_process_joystick(void) {
-    if (timer_elapsed(stick_timer) > js_profile.stick_timer_ms) {
+    if (timer_elapsed(stick_timer) > joystick_config.read_interval_ms) {
         stick_timer = timer_read32();
         handle_joystick();
     }

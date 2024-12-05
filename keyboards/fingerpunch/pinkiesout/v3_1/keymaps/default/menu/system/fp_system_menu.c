@@ -21,6 +21,8 @@ const menu_item_t SYSTEM_MENU[] = {
     {"Bootloader", enter_bootloader, MENU_TYPE_ACTION},
     {"Debug Info", show_debug_info, MENU_TYPE_DISPLAY},
     {"Piezo Test", test_piezo, MENU_TYPE_ACTION},
+    {"OLED Brightness +", increase_oled_brightness, MENU_TYPE_ACTION},
+    {"OLED Brightness -", decrease_oled_brightness, MENU_TYPE_ACTION},
     {"Back", menu_stack_pop, MENU_TYPE_ACTION},
     {"Main Menu", menu_stack_home, MENU_TYPE_ACTION}
 };
@@ -110,4 +112,12 @@ uint32_t play_test_song(uint32_t trigger_time, void* cb_arg) {
     audio_play_melody(&fp_startup_dark, sizeof(fp_startup_dark) / sizeof(fp_startup_dark[0]), false);
     #endif
     return 0;
+}
+
+void increase_oled_brightness(void) {
+    oled_set_brightness(MIN(oled_get_brightness() + 5, 255));
+}
+
+void decrease_oled_brightness(void) {
+    oled_set_brightness(MAX(oled_get_brightness() - 5, 10));
 }

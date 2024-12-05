@@ -33,4 +33,6 @@ void reset_eeprom(void);
 void enter_bootloader(void);
 void show_debug_info(void);
 void test_piezo(void);
+void increase_oled_brightness(void);
+void decrease_oled_brightness(void);
 uint32_t play_test_song(uint32_t trigger_time, void* cb_arg);

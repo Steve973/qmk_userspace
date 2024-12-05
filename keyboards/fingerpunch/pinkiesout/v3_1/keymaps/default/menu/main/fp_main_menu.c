@@ -21,12 +21,11 @@ const menu_item_t MAIN_MENU[] = {
     {"RGB", show_rgb_menu, MENU_TYPE_SUBMENU},
     {"System", show_system_menu, MENU_TYPE_SUBMENU},
     {"KB Stats", show_kb_stats, MENU_TYPE_DISPLAY},
-    {"Exit", exit_menu, MENU_TYPE_ACTION}
+    {"Exit", menu_stack_pop, MENU_TYPE_ACTION}
 };
 
 const size_t MAIN_MENU_SIZE = sizeof(MAIN_MENU) / sizeof(menu_item_t);
 
-void exit_menu(void) {
-    set_in_menu_mode(false);
-    oled_clear();
+void show_kb_stats(void) {
+    // Display the keyboard statistics
 }

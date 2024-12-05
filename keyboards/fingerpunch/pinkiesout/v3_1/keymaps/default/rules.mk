@@ -8,7 +8,6 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/joystick/fp_joystick_mode_menu.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/joystick/fp_joystick_sensitivity_menu.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/main/fp_main_menu.c
-    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/main/actions/kb_stats_display.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/rgb/fp_rgb_hue_menu.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/rgb/fp_rgb_menu.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/rgb/fp_rgb_mode_menu.c
@@ -18,14 +17,13 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/menu/system/fp_system_menu.c
 endif
 
-ifeq ($(and $(filter yes,$(VIK_ENABLE)),$(filter yes,$(JOYSTICK_ENABLE))),yes)
+ifeq ($(strip $(JOYSTICK_ENABLE)), yes)
     ANALOG_DRIVER_REQUIRED = yes
+    POINTING_DEVICE_ENABLE = yes
+    POINTING_DEVICE_DRIVER = custom
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/joystick_calibration/fp_joystick_calibration_neutral.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/joystick_calibration/fp_joystick_calibration_range.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/fp_joystick.c
-    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/fp_joystick_calibration.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/fp_joystick_handler.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/fp_joystick_read.c
-    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/fp_key_led_effects.c
-endif
-
-ifeq ($(and $(filter yes,$(OLED_ENABLE)),$(filter yes,$(JOYSTICK_ENABLE))),yes)
-    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/default/fp_joystick_oled.c
 endif

@@ -17,11 +17,12 @@
 #pragma once
 
 #ifdef OLED_ENABLE
-  #undef OLED_BRIGHTNESS
   #undef OLED_DISPLAY_ADDRESS
-  #define OLED_BRIGHTNESS        96
   #define OLED_DISPLAY_ADDRESS   0x3D
   #define OLED_DISPLAY_128X128
   #define OLED_PRE_CHARGE_PERIOD 0x22
   #define OLED_VCOM_DETECT       0x35
 #endif
+
+#define EECONFIG_USER_DATA_SIZE 23
+#define FP_USER_CONFIG_VERSION 1

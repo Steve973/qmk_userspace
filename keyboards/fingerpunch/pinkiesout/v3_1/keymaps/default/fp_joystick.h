@@ -16,13 +16,46 @@
 
 #pragma once
 
-#include "gpio.h"
+#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <time.h>
+#include "analog.h"
 #include "color.h"
-#include "quantum/keycodes.h"
+#include "eeconfig.h"
+#include "gpio.h"
+#include "keycodes.h"
+#include "quantum.h"
+#include "pointing_device/pointing_device.h"
+#include "fingerpunch/pinkiesout/v3_1/config.h"
+#include "config.h"
 
+#define STICK_READ_INTERVAL_MS_DEFAULT 50
 #define CALIBRATION_DURATION_MS 5000
 #define CALIBRATION_SAMPLE_COUNT 100
 #define FIXED_POINT_SCALE 1024
+#define NEUTRAL_RECAL_DAYS 7
+#define DEADZONE_INNER_PERCENT_DEFAULT 50
+#define DEADZONE_OUTER_PERCENT_DEFAULT 95
+#define ONE_DAY 86400
+
+/**
+ * Represents the joystick handler function signature, which is used
+ * to process the joystick input for the various joystick modes.
+ */
+typedef void (*joystick_handler_t)(int8_t x, int8_t y);
+
+/**
+ * Represents the array of joystick handler functions, which are used
+ * to process the joystick input for the various joystick modes.
+ */
+extern const joystick_handler_t stick_handlers[];
+
+/**
+ * Represents the number of joystick handler functions, which are used
+ * to process the joystick input for the various joystick modes.
+ */
+extern const uint8_t stick_handler_count;
 
 /**
  * Represents the analog joystick directions, which is useful for
@@ -30,10 +63,11 @@
  * that is installed in the physical "up" position.
  */
 typedef enum {
-    JS_RIGHT = 0,     // joystick's right is facing up
-    JS_UP    = 1,     // joystick's up is facing up
-    JS_LEFT  = 2,     // joystick's left is facing up
-    JS_DOWN  = 3,     // joystick's down is facing up
+    JS_NEUTRAL  = -1,
+    JS_RIGHT    = 0,     // joystick's right is facing up
+    JS_UP       = 1,     // joystick's up is facing up
+    JS_LEFT     = 2,     // joystick's left is facing up
+    JS_DOWN     = 3,     // joystick's down is facing up
     ORIENTATION_COUNT = 4
 } joystick_up_orientation;
 
@@ -53,13 +87,46 @@ typedef enum {
 } joystick_stick_modes;
 
 /**
- * Represents the joystick calibration data, including the neutral
- * values for the x and y axes, min and max values for the x and y
- * axes, and the inner and outer deadzones.
+ * Represents the joystick calibration data, including:
+ * - Neutral position (center) for both axes
+ * - Min/max range values for both axes
+ * - Inner/outer deadzone percentages
+ * - last calibration timestamps for neutral postiion and range
+ * - Scale factor to map normalized values to output range
+ * 
+ * Processing order:
+ * 1. Raw values normalized to origin (0,0)
+ * 2. Deadzones applied as percentage of normalized range:
+ *    - inner_deadzone_percent: Percentage (0-100) around center where no movement is detected
+ *    - outer_deadzone_percent: Percentage (0-100) at extremes where max value is reported
+ * 3. Scale factor applied to map normalized values to full output range
+ * 
+ * Scale factor ensures the normalized and deadzone-processed values 
+ * reach the intended minimum/maximum output values based on the
+ * joystick's physical range of motion.
+ * 
+ * This goes into the user EEPROM datablock, so here is some helpful
+ * size information:
+ * 
+ * - x_neutral:              2 bytes
+ * - x_min:                  2 bytes
+ * - x_max:                  2 bytes
+ * - y_neutral:              2 bytes
+ * - y_min:                  2 bytes
+ * - y_max:                  2 bytes
+ * - deadzone_inner_percent: 1 byte
+ * - deadzone_outer_percent: 1 byte
+ * - last_neutral_cal:       2 bytes
+ * - last_range_cal:         2 bytes
+ * - shift_factor:           1 bytes
+ * - Total size:             19 bytes
  */
-typedef struct joystick_calibration {
-    int16_t x_neutral, x_min, x_max, y_neutral, y_min, y_max;
-    int16_t deadzone_inner, deadzone_outer, scale_factor;
+typedef struct __attribute__((packed)) {
+    int16_t  x_neutral, x_min, x_max;
+    int16_t  y_neutral, y_min, y_max;
+    uint8_t  deadzone_inner_percent, deadzone_outer_percent;
+    uint16_t last_neutral_cal, last_range_cal;
+    uint8_t  shift_factor;
 } joystick_calibration_t;
 
 /**
@@ -79,77 +146,70 @@ typedef struct {
 } joystick_coordinate_t;
 
 /**
- * Represents keycodes specifically for the joystick.
- */
-enum joystick_keycodes {
-    VJS_QUAD = QK_KB,  // stick rotation quadrants
-    VJS_SMOD           // stick mode
-};
-
-/**
  * The structure for persisted joystick configuration, including
  * the mode, and the electrical direction is installed in the physical
  * "up" direction.
+ * 
+ * This goes into the user EEPROM datablock, so here is some helpful
+ * size information:
+ * 
+ * - mode:           1 byte
+ * - up_orientation: 1 byte
+ * - read_interval:  1 byte
+ * - Total size:     3 bytes
  */
-typedef struct {
-    uint8_t mode;
-    int16_t up_orientation;
+typedef struct __attribute__((packed)) {
+    int8_t mode;
+    int8_t up_orientation;
+    uint8_t read_interval_ms;
 } fp_joystick_config_t;
 
 extern fp_joystick_config_t joystick_config;
 
 /**
- * The structure for blinking/pulsing the RGB of the key for a given
- * keycode. The keycode determines which key blinks/pulses, the cycle
- * duration determines the time between cycling from one color to the
- * second color, then back to the first color.  The pulse flag sets
- * the behavior between blinking or pulsing between the two colors.
- * The RGB and HSV values determine the color characteristics.
- */
-typedef struct {
-    uint16_t keycode, cycle_duration_ms;
-    RGB      target_rgb;
-    bool     pulse;
-} blink_params_t;
-
-/**
  * Represents a joystick profile, including the parameters that are
  * necessary for calibration and usage (e.g., adjustments like scaling
- * and rotation if the joystick is installed with its electrical "up"
- * direction in a physical orientation other than "up").
+ * and deadzone).
  */
 typedef struct {
-    int16_t  actuation_point, deadzone_inner, deadzone_outer, stick_timer_ms;
-    int8_t   button_count, out_min, out_max, resolution_bits;
-    uint16_t raw_min, raw_neutral, raw_max;
+    int8_t  bits;
+    int16_t min, neutral, max;
 } joystick_profile_t;
 
+extern joystick_profile_t js_profile_raw;
+extern joystick_profile_t js_profile_out;
+
 /**
- * A macro that sets up a profile for an analog thumb joystick.
- * This is a standard configuration that is used for joysticks
- * that have 10-bit resolution (1024 steps) potentiometers for
- * each axis, and a symmetrical 8-bit output range (-127 to 127).
- * The actuation point is set to 40, and the deadzones are set
- * to 60, for a comfortable range to avoid accidental inputs.
+ * A macro that sets up a profile for a symmetrical 8-bit joystick.
+ * This is a standard configuration that is used for joysticks that
+ * have 8-bit resolution (256 steps) potentiometers for each axis,
+ * and a symmetrical 8-bit output range (-127 to 127), with zero as
+ * the neutral value.
  */
-#define JS_10BIT_SYM8BIT ((const joystick_profile_t) { \
-    .actuation_point = 40, \
-    .button_count = 0, \
-    .deadzone_inner = 60, \
-    .deadzone_outer = 60, \
-    .out_min = -127, \
-    .out_max = 127, \
-    .raw_min = 0, \
-    .raw_neutral = 511, \
-    .raw_max = 1023, \
-    .resolution_bits = 8, \
-    .stick_timer_ms = 10 \
+#define JS_PROFILE_SYM8BIT ((const joystick_profile_t) { \
+    .bits = 8, \
+    .min = -127, \
+    .neutral = 0, \
+    .max = 127 \
+})
+
+/**
+ * A macro that sets up a profile for a 10-bit joystick.
+ * This is a standard configuration that is used for joysticks that
+ * have 10-bit resolution (1024 steps) potentiometers for each axis,
+ * and an asymmetrical 10-bit output range (0 to 1023), with 512 as
+ * the neutral value.
+ */
+#define JS_PROFILE_10BIT ((const joystick_profile_t) { \
+    .bits = 10, \
+    .min = 0, \
+    .neutral = 512, \
+    .max = 1023 \
 })
 
 #ifdef JOYSTICK_ENABLE
-  #define JS_MODE             JOYSTICK_SM_ARROWS
-  #define JS_UP_ORIENTATION   JS_RIGHT
-  #define JOYSTICK_PROFILE    JS_10BIT_SYM8BIT
+  #define JOYSTICK_PROFILE_RAW JS_PROFILE_10BIT
+  #define JOYSTICK_PROFILE_OUT JS_PROFILE_SYM8BIT
 #endif
 
 /**
@@ -160,21 +220,56 @@ typedef struct {
  */
 extern joystick_profile_t js_profile;
 
-int8_t get_stick_up_orientation(void);
-void set_stick_up_orientation(joystick_up_orientation up_orientation);
-int16_t get_stick_up_angle(void);
-int8_t get_stick_mode(void);
-void step_stick_mode(void);
-void calibrate_range(void);
-void calibrate_neutral_values(void);
-uint8_t get_led_index(uint16_t keycode);
-void blink_key(blink_params_t blink_params, bool reset);
+/**
+ * Represents the user configuration data, including the joystick
+ * configuration and calibration data, and the configuration version.
+ * 
+ * This goes into the user EEPROM datablock, so here is some helpful
+ * size information:
+ * 
+ * - js_config:      3 bytes
+ * - js_calibration: 19 bytes
+ * - config_version: 1 byte
+ * - Total size:     23 bytes
+ */
+typedef struct __attribute__((packed)) {
+    fp_joystick_config_t js_config;
+    joystick_calibration_t js_calibration;
+    uint8_t config_version;
+} fp_config_user_t;
+
+extern fp_config_user_t fp_kb_config_user;
+
+// Joystick reading functions
 int16_t read_x_axis(void);
 int16_t read_y_axis(void);
-joystick_coordinate_t apply_scaling_and_deadzone(joystick_coordinate_t raw_coordinates);
-joystick_coordinate_t read_joystick_coordinates(void);
 joystick_coordinate_t read_joystick(void);
+
+// Joystick coordinate processing functions
+void handle_rotation(int16_t* x, int16_t* y);
+void apply_deadzones(int16_t* x, int16_t* y);
+void scale_joystick_coordinates(int16_t* x, int16_t* y);
+void normalize_joystick_coordinates(int16_t* x, int16_t* y);
 int8_t calculate_direction(bool rotate);
-void joystick_adjust_oled_brightness(void);
-void fp_post_init_joystick(void);
+int16_t get_stick_up_angle(void);
+
+// Joystick calibration functions
+void calibrate_neutral_values(bool async);
+void calibrate_range(bool async);
+
+// Joystick config/properties functions
+int8_t get_stick_up_orientation(void);
+void set_stick_up_orientation(joystick_up_orientation up_orientation);
+void set_stick_mode(uint8_t mode);
+void step_stick_mode(void);
+int8_t get_stick_mode(void);
+
+// Joystick operation functions
+bool wait_for_js_movement(uint32_t timeout_ms, uint8_t percent);
+void handle_joystick(void);
 void fp_process_joystick(void);
+
+// Joystick initialization and eeprom functions
+void fp_post_init_joystick(void);
+bool fp_kb_config_load(void);
+void fp_kb_config_save(void);
