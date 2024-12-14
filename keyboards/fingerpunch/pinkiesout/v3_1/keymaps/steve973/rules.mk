@@ -13,8 +13,10 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
 	SRC += menu/actions/builtin/postcondition/postcondition.c
 	SRC += menu/actions/builtin/precondition/precondition.c
 	SRC += menu/actions/builtin/result/result.c
-	SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/oled/fp_kb_stats.c
-	SRC += oled/fp_logo.c
+	SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/oled/fp_kb_screens.c
+	SRC += oled/qmk_logo.c
+	SRC += oled/timeout_indicator/timeout_indicator.c
+	SRC += mfd/mfd.c
 
     MENU_TOOL := $(QMK_USERSPACE)/users/steve973/menu/generator/generate_menu.py
     MENU_JSON := $(QMK_USERSPACE)/users/steve973/menu/config/menu_config.json

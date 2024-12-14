@@ -14,11 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fp_joystick.h"
+#include <action.h>
 #include "joystick.h"
 #include "pointing_device/pointing_device.h"
 #include "quantum.h"
-#include <action.h>
+#include "report.h"
+#include "fp_joystick.h"
 
 typedef void (*stick_mode_handler)(int8_t x, int8_t y);
 

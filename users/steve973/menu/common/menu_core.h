@@ -213,6 +213,11 @@ typedef struct menu_item {
 bool menu_init(void);
 
 /**
+ * Exit the menu system
+ */
+void menu_exit(void);
+
+/**
  * Enter current menu item (execute action or enter submenu)
  * @return true if operation successful
  */

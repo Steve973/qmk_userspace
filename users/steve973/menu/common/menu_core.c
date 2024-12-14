@@ -24,6 +24,7 @@
 #include "keycodes.h"
 #include "timer.h"
 #include "src/fp_rgb_common.h"
+#include "oled/timeout_indicator/timeout_indicator.h"
 #include "menu/common/menu_operation.h"
 #include "menu/common/menu_core.h"
 
@@ -60,33 +61,14 @@ typedef struct menu_state {
 /* Static Variables */
 static bool menu_active = false;
 static menu_state_t menu_state;
-static deferred_token menu_timeout_token = INVALID_DEFERRED_TOKEN;
+static uint8_t menu_timeout_token = INVALID_DEFERRED_TOKEN;
 
 extern const menu_item_t* const menu_root;  // Defined in generated code
 
 /* Menu Activity Management */
 static void update_menu_activity(void) {
+    timeout_indicator_reset(menu_timeout_token);
     menu_state.last_activity = timer_read32();
-}
-
-uint32_t check_menu_timeout(uint32_t trigger_time, void* cb_arg) {
-    uint32_t elapsed = timer_read32() - menu_state.last_activity;
-    if (elapsed >= menu_state.timeout_ms) {
-        set_menu_active(false);
-        return 0;
-    }
-
-    // Draw timeout indicator
-    uint8_t height = OLED_DISPLAY_HEIGHT;
-    uint16_t progress = (elapsed << 8) / menu_state.timeout_ms;
-    uint16_t remaining_fixed = 256 - progress;
-    uint8_t remaining = (height * remaining_fixed) >> 8;
-
-    for (uint8_t i = 0; i < height; i++) {
-        oled_write_pixel(OLED_DISPLAY_WIDTH-1, i, i < remaining);
-    }
-
-    return 100;  // Check again in 100ms
 }
 
 /**
@@ -142,13 +124,17 @@ void set_menu_active(bool active) {
     if (active) {
         update_menu_activity();
         oled_clear();
-        menu_timeout_token = defer_exec(100, check_menu_timeout, NULL);
+        menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &menu_exit);
     } else {
-        cancel_deferred_exec(menu_timeout_token);
+        timeout_indicator_cancel(menu_timeout_token);
         clear_keyboard();
         oled_clear();
     }
     set_menu_mode_lighting(active);
+}
+
+void menu_exit(void) {
+    set_menu_active(false);
 }
 
 bool menu_enter(void) {

@@ -23,6 +23,7 @@
 #include "fp_pinkiesout.h"
 #include "joystick/fp_joystick.h"
 #include "menu/common/menu_core.h"
+#include "mfd/mfd.h"
 
 uint32_t keypress_count = 0;
 uint8_t peak_wpm = 0;
@@ -96,19 +97,19 @@ void housekeeping_task_user(void) {
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     oled_set_brightness(50);
+    mfd_init();
     return OLED_ROTATION_180;
 }
 
 bool oled_task_user(void) {
     static int32_t display_timer = 0;
-    // Update display every 200ms
-    if (timer_read32() - display_timer >= 200) {
+    // Update display every 50ms
+    if (timer_read32() - display_timer >= 50) {
         display_timer = timer_read32();
         if (is_menu_active()) {
             display_current_menu();
         } else {
-            oled_display_stats();
-            oled_display_logo();
+            render_current_screen();
         }
     }
     return false;
