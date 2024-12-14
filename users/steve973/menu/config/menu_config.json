@@ -1,0 +1,592 @@
+{
+    "main_menu": {
+        "label": "Main Menu",
+        "label_short": "Main",
+        "icon": "NONE",
+        "type": "submenu",
+        "children": [
+            {
+                "label": "Joystick",
+                "label_short": "JS",
+                "icon": "NONE",
+                "shortcut": "KC_J",
+                "type": "submenu",
+                "help_text": "Configure joystick settings and calibration",
+                "conditions.feature_enabled": "JOYSTICK_ENABLE",
+                "children": [
+                    {
+                        "label": "Calibration",
+                        "label_short": "Cal",
+                        "icon": "NONE",
+                        "shortcut": "KC_C",
+                        "type": "submenu",
+                        "help_text": "Calibrate joystick neutral values and maximum range",
+                        "children": [
+                            {
+                                "label": "Neutral",
+                                "label_short": "Neutral",
+                                "icon": "NONE",
+                                "shortcut": "KC_N",
+                                "type": "action",
+                                "help_text": "Calibrate center position.\nDo not touch joystick during calibration.",
+                                "operation": {
+                                    "action": "calibrate_joystick_neutral",
+                                    "confirm": {
+                                        "message": "Release joystick and press Enter",
+                                        "timeout_sec": 30
+                                    },
+                                    "result": {
+                                        "message": "Neutral calibration complete\nDrift: {drift}%",
+                                        "mode": "acknowledge",
+                                        "ok_text": "Continue"
+                                    }
+                                }
+                            },
+                            {
+                                "label": "Range",
+                                "label_short": "Range",
+                                "icon": "NONE",
+                                "shortcut": "KC_R",
+                                "type": "action",
+                                "help_text": "Calibrate maximum range.\nRotate joystick in full circles.",
+                                "operation": {
+                                    "action": "calibrate_joystick_range",
+                                    "confirm": {
+                                        "message": "Move joystick in circles at maximum range",
+                                        "timeout_sec": 30
+                                    },
+                                    "result": {
+                                        "message": "Range calibration complete",
+                                        "mode": "timed",
+                                        "timeout_sec": 2
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "label": "Mode",
+                        "label_short": "Mode",
+                        "icon": "NONE",
+                        "shortcut": "KC_M",
+                        "type": "action",
+                        "help_text": "Select joystick operation mode",
+                        "operation": {
+                            "action": "set_stick_mode",
+                            "input": [{
+                                "type": "options",
+                                "options": ["Arrows", "WASD", "Analog", "Mouse"],
+                                "options.conditions": {
+                                    "Mouse": "POINTING_DEVICE_ENABLE"
+                                },
+                                "prompt": "Select mode:",
+                                "default": "{current_stick_mode}",
+                                "wrap": true
+                            }],
+                            "result": {
+                                "message": "Mode set to: {selected_mode}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Sensitivity",
+                        "label_short": "Sens",
+                        "icon": "NONE",
+                        "shortcut": "KC_S",
+                        "type": "submenu",
+                        "help_text": "Adjust joystick analog sensitivity",
+                        "children": [
+                            {
+                                "label": "X Axis",
+                                "label_short": "XAxis",
+                                "icon": "NONE",
+                                "shortcut": "KC_X",
+                                "type": "action",
+                                "help_text": "Set X axis sensitivity",
+                                "operation": {
+                                    "action": "set_x_axis_sensitivity",
+                                    "input": [{
+                                        "type": "range",
+                                        "range": "0..100:5",
+                                        "prompt": "X Sensitivity:",
+                                        "default": 50,
+                                        "wrap": true
+                                    }],
+                                    "result": {
+                                        "message": "X sensitivity: {value}%",
+                                        "mode": "timed",
+                                        "timeout_sec": 1
+                                    }
+                                }
+                            },
+                            {
+                                "label": "Y Axis",
+                                "label_short": "YAxis",
+                                "icon": "NONE",
+                                "shortcut": "KC_Y",
+                                "type": "action",
+                                "help_text": "Set Y axis sensitivity",
+                                "operation": {
+                                    "action": "set_y_axis_sensitivity",
+                                    "input": [{
+                                        "type": "range",
+                                        "range": "0..100:5",
+                                        "prompt": "Y Sensitivity:",
+                                        "default": 50,
+                                        "wrap": true
+                                    }],
+                                    "result": {
+                                        "message": "Y sensitivity: {value}%",
+                                        "mode": "timed",
+                                        "timeout_sec": 1
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "label": "Orientation",
+                        "label_short": "Ornt",
+                        "icon": "NONE",
+                        "shortcut": "KC_O",
+                        "type": "action",
+                        "help_text": "Set physical up direction.\nMove joystick in physical UP direction.",
+                        "operation": {
+                            "action": "detect_orientation",
+                            "confirm": {
+                                "message": "Move joystick in physical UP direction",
+                                "timeout_sec": 30
+                            },
+                            "result": {
+                                "message": "Orientation set",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "RGB",
+                "label_short": "RGB",
+                "icon": "NONE",
+                "shortcut": "KC_R",
+                "type": "submenu",
+                "help_text": "Configure RGB matrix settings",
+                "conditions.feature_enabled": "RGB_MATRIX_ENABLE",
+                "children": [
+                    {
+                        "label": "Mode",
+                        "label_short": "Mode",
+                        "icon": "NONE",
+                        "shortcut": "KC_M",
+                        "type": "action",
+                        "help_text": "Select RGB matrix animation mode",
+                        "operation": {
+                            "action": "set_rgb_mode",
+                            "input": [{
+                                "type": "options",
+                                "options": "{rgb_matrix_modes}",
+                                "prompt": "Select mode:",
+                                "default": "{current_rgb_mode}",
+                                "wrap": true,
+                                "display_values": "{rgb_matrix_mode_names}"
+                            }],
+                            "result": {
+                                "message": "Mode: {selected_mode_name}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Hue",
+                        "label_short": "Hue",
+                        "icon": "NONE",
+                        "shortcut": "KC_H",
+                        "type": "action",
+                        "help_text": "Adjust RGB matrix color hue",
+                        "operation": {
+                            "action": "set_rgb_hue",
+                            "input": [{
+                                "type": "range",
+                                "range": "0..255:8",
+                                "prompt": "Hue:",
+                                "default": "{rgb_matrix_hue}",
+                                "wrap": true,
+                                "live_preview": true
+                            }],
+                            "result": {
+                                "message": "Hue: {value}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Saturation",
+                        "label_short": "Sat",
+                        "icon": "NONE",
+                        "shortcut": "KC_S",
+                        "type": "action",
+                        "help_text": "Adjust RGB matrix color saturation",
+                        "operation": {
+                            "action": "set_rgb_sat",
+                            "input": [{
+                                "type": "range",
+                                "range": "0..255:8",
+                                "prompt": "Saturation:",
+                                "default": "{rgb_matrix_sat}",
+                                "wrap": true,
+                                "live_preview": true
+                            }],
+                            "result": {
+                                "message": "Saturation: {value}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Value",
+                        "label_short": "Val",
+                        "icon": "NONE",
+                        "shortcut": "KC_V",
+                        "type": "action",
+                        "help_text": "Adjust RGB matrix brightness",
+                        "operation": {
+                            "action": "set_rgb_val",
+                            "input": [{
+                                "type": "range",
+                                "range": "0..255:8",
+                                "prompt": "Brightness:",
+                                "default": "{rgb_matrix_val}",
+                                "wrap": true,
+                                "live_preview": true
+                            }],
+                            "result": {
+                                "message": "Brightness: {value}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Speed",
+                        "label_short": "Speed",
+                        "icon": "NONE",
+                        "shortcut": "KC_P",
+                        "type": "action",
+                        "help_text": "Adjust RGB matrix animation speed",
+                        "operation": {
+                            "action": "set_rgb_speed",
+                            "input": [{
+                                "type": "range",
+                                "range": "0..100:5",
+                                "prompt": "Speed:",
+                                "default": "{rgb_matrix_speed}",
+                                "wrap": true,
+                                "live_preview": true
+                            }],
+                            "result": {
+                                "message": "Speed: {value}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Toggle RGB",
+                        "label_short": "RgbTogg",
+                        "icon": "NONE",
+                        "shortcut": "KC_T",
+                        "type": "action",
+                        "help_text": "Toggle RGB matrix on/off",
+                        "operation": {
+                            "action": "toggle_rgb",
+                            "result": {
+                                "message": "RGB Matrix: {rgb_matrix_enabled}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "System",
+                "label_short": "SYS",
+                "icon": "NONE",
+                "shortcut": "KC_S",
+                "type": "submenu",
+                "help_text": "System configuration and utilities",
+                "children": [
+                    {
+                        "label": "Reset EEPROM",
+                        "label_short": "RstEE",
+                        "icon": "NONE",
+                        "shortcut": "KC_R",
+                        "type": "action",
+                        "help_text": "Reset all settings to factory defaults.\nWARNING: This will erase all saved settings.",
+                        "operation": {
+                            "action": "reset_eeprom",
+                            "confirm": {
+                                "message": "Reset all settings?\nThis cannot be undone!",
+                                "timeout_sec": 30,
+                                "default": false,
+                                "true_text": "Reset",
+                                "false_text": "Cancel"
+                            },
+                            "result": {
+                                "message": "Settings reset complete\nRebooting...",
+                                "mode": "timed",
+                                "timeout_sec": 2
+                            }
+                        }
+                    },
+                    {
+                        "label": "Bootloader",
+                        "label_short": "BootLdr",
+                        "icon": "NONE",
+                        "shortcut": "KC_B",
+                        "type": "action",
+                        "help_text": "Enter bootloader mode for firmware update.\nKeyboard will disconnect from USB.",
+                        "operation": {
+                            "action": "enter_bootloader",
+                            "confirm": {
+                                "message": "Enter bootloader mode?",
+                                "timeout_sec": 30,
+                                "default": false,
+                                "true_text": "Yes",
+                                "false_text": "No"
+                            }
+                        }
+                    },
+                    {
+                        "label": "Debug Info",
+                        "label_short": "DbgInf",
+                        "icon": "NONE",
+                        "shortcut": "KC_D",
+                        "type": "display",
+                        "help_text": "View system information and configuration",
+                        "operation": {
+                            "action": "show_debug_info"
+                        }
+                    },
+                    {
+                        "label": "Piezo Test",
+                        "label_short": "PzTst",
+                        "icon": "NONE",
+                        "shortcut": "KC_P",
+                        "type": "action",
+                        "help_text": "Test piezo buzzer functionality",
+                        "conditions.feature_enabled": "AUDIO_ENABLE",
+                        "operation": {
+                            "action": "test_piezo",
+                            "result": {
+                                "message": "Testing piezo...",
+                                "mode": "timed",
+                                "timeout_sec": 2
+                            }
+                        }
+                    },
+                    {
+                        "label": "OLED Brightness",
+                        "label_short": "Bright",
+                        "icon": "NONE",
+                        "shortcut": "KC_O",
+                        "type": "action",
+                        "help_text": "Adjust OLED display brightness",
+                        "conditions.feature_enabled": "OLED_ENABLE",
+                        "operation": {
+                            "action": "set_oled_brightness",
+                            "input": [{
+                                "type": "range",
+                                "range": "15..255:16",
+                                "prompt": "Brightness:",
+                                "default": "{oled_brightness}",
+                                "wrap": true,
+                                "live_preview": true
+                            }],
+                            "result": {
+                                "message": "Brightness set to {value}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "KB Stats",
+                "label_short": "KbStat",
+                "icon": "NONE",
+                "shortcut": "KC_K",
+                "type": "display",
+                "help_text": "View keyboard usage statistics",
+                "operation": {
+                    "action": "show_kb_stats"
+                }
+            },
+            {
+                "label": "Menu Options",
+                "label_short": "MenuOpt",
+                "icon": "NONE",
+                "shortcut": "KC_O",
+                "type": "submenu",
+                "help_text": "Configure menu system behavior",
+                "children": [
+                    {
+                        "label": "Show Shortcuts",
+                        "label_short": "ShCut",
+                        "icon": "NONE",
+                        "shortcut": "KC_S",
+                        "type": "action",
+                        "help_text": "Display shortcut keys in menu labels.\nExample: 'Mode (M)'",
+                        "operation": {
+                            "action": "set_menu_show_shortcuts",
+                            "input": [{
+                                "type": "options",
+                                "options": ["Off", "On"],
+                                "default": "{menu_show_shortcuts}",
+                                "wrap": true
+                            }],
+                            "result": {
+                                "message": "Show shortcuts: {value}",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Default Timeouts",
+                        "label_short": "DefTmout",
+                        "icon": "NONE",
+                        "shortcut": "KC_T",
+                        "type": "submenu",
+                        "help_text": "Set default timeout values for menu operations",
+                        "children": [
+                            {
+                                "label": "Result Display",
+                                "label_short": "Result",
+                                "icon": "NONE",
+                                "shortcut": "KC_R",
+                                "type": "action",
+                                "help_text": "Default seconds to show operation results",
+                                "operation": {
+                                    "action": "set_menu_result_timeout",
+                                    "input": [{
+                                        "type": "range",
+                                        "range": "1..10:1",
+                                        "prompt": "Seconds:",
+                                        "default": "{menu_result_timeout}",
+                                        "wrap": true
+                                    }]
+                                }
+                            },
+                            {
+                                "label": "Confirmation",
+                                "label_short": "Conf",
+                                "icon": "NONE",
+                                "shortcut": "KC_C",
+                                "type": "action",
+                                "help_text": "Default seconds for confirmation dialogs",
+                                "operation": {
+                                    "action": "set_menu_confirm_timeout",
+                                    "input": [{
+                                        "type": "range",
+                                        "range": "10..60:5",
+                                        "prompt": "Seconds:",
+                                        "default": "{menu_confirm_timeout}",
+                                        "wrap": true
+                                    }]
+                                }
+                            },
+                            {
+                                "label": "Menu Timeout",
+                                "label_short": "MenuTmout",
+                                "icon": "NONE",
+                                "shortcut": "KC_M",
+                                "type": "action",
+                                "help_text": "Seconds until menu auto-exits",
+                                "operation": {
+                                    "action": "set_menu_timeout",
+                                    "input": [{
+                                        "type": "range",
+                                        "range": "5..120:5",
+                                        "prompt": "Seconds:",
+                                        "default": "{menu_timeout}",
+                                        "wrap": true
+                                    }]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "label": "Navigation",
+                        "label_short": "Nav",
+                        "icon": "NONE",
+                        "shortcut": "KC_N",
+                        "type": "submenu",
+                        "help_text": "Configure menu navigation options",
+                        "children": [
+                            {
+                                "label": "WASD Keys",
+                                "label_short": "WASD",
+                                "icon": "NONE",
+                                "shortcut": "KC_W",
+                                "type": "action",
+                                "help_text": "Enable WASD keys for menu navigation",
+                                "operation": {
+                                    "action": "set_menu_wasd_nav",
+                                    "input": [{
+                                        "type": "options",
+                                        "options": ["Off", "On"],
+                                        "default": "{menu_wasd_nav}",
+                                        "wrap": true
+                                    }]
+                                }
+                            },
+                            {
+                                "label": "Selection Style",
+                                "label_short": "Select",
+                                "icon": "NONE",
+                                "shortcut": "KC_S",
+                                "type": "action",
+                                "help_text": "Set menu item selection indicator",
+                                "operation": {
+                                    "action": "set_menu_selection_style",
+                                    "input": [{
+                                        "type": "options",
+                                        "options": ["Highlight", "> Pointer", "* Star"],
+                                        "default": "{menu_selection_style}",
+                                        "wrap": true
+                                    }]
+                                }
+                            },
+                            {
+                                "label": "Shortcut Mode",
+                                "label_short": "ShCutMode",
+                                "icon": "NONE",
+                                "shortcut": "KC_M",
+                                "type": "action",
+                                "help_text": "Configure shortcut key behavior:\nDirect - Execute immediately\nSelect - Highlight first, execute on second press",
+                                "operation": {
+                                    "action": "set_menu_shortcut_mode",
+                                    "input": [{
+                                        "type": "options",
+                                        "options": ["Direct", "Select"],
+                                        "default": "{menu_shortcut_mode}",
+                                        "wrap": true
+                                    }]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

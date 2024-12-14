@@ -1,6 +1,6 @@
 {
     "userspace_version": "1.0",
     "build_targets": [
-        ["fingerpunch/pinkiesout/v3_1", "default"]
+        ["fingerpunch/pinkiesout/v3_1", "steve973"]
     ]
 }

@@ -11,4 +11,6 @@
 *.uf2
 
 .vscode
-.
+.cache
+
+compile_commands.json

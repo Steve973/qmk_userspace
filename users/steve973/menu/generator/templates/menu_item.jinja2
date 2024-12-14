@@ -1,0 +1,114 @@
+{# Helper macro for operation configurations #}
+{% macro render_operation_configs(op, name) %}
+{% if op.input %}
+{# First generate any option arrays needed by inputs #}
+{% for input in op.input %}
+{% if input.type.name == "OPTIONS" %}
+static const char* const {{ name }}_input{{ loop.index0 }}_options[] = {
+    {% for option in input.options %}
+    "{{ option }}",
+    {% endfor %}
+};
+{% endif %}
+{% endfor %}
+
+{# Then generate the input configs #}
+static const struct input_config {{ name }}_inputs[] = {
+    {% for input in op.input %}
+    {
+        .type = INPUT_TYPE_{{ input.type.name }},
+        .prompt = "{{ input.prompt|replace('\n', '\\n') }}",
+        .default_val = "{{ input.default }}",
+        .wrap = {{ input.wrap|lower }},
+        .live_preview = {{ input.live_preview|default(false)|lower }},
+        .data = {
+            {% if input.type.name == "RANGE" %}
+            .range = {
+                .min = {{ input.range.split("..")[0] }},
+                .max = {{ input.range.split("..")[1].split(":")[0] }},
+                .step = {{ input.range.split(":")[1] }}
+            }
+            {% elif input.type.name == "OPTIONS" %}
+            .options = {
+                .options = {{ name }}_input{{ loop.index0 }}_options,
+                .option_count = {{ input.options|length }}
+            }
+            {% endif %}
+        }
+    }{{ "," if not loop.last }}
+    {% endfor %}
+};
+
+static const struct input_array_config {{ name }}_input_array = {
+    .inputs = {{ name }}_inputs,
+    .input_count = {{ op.input|length }}
+};
+{% endif %}
+
+{% if op.confirm %}
+static const struct confirm_config {{ name }}_confirm = {
+    .message = "{{ op.confirm.message|replace('\n', '\\n') }}",
+    .timeout_sec = {{ op.confirm.timeout_sec|default(0) }},
+    .true_text = "{{ op.confirm.true_text or 'Yes' }}",
+    .false_text = "{{ op.confirm.false_text or 'No' }}"
+};
+{% endif %}
+
+{% if op.result %}
+static const struct result_config {{ name }}_result = {
+    .message = "{{ op.result.message|replace('\n', '\\n') }}",
+    .mode = RESULT_MODE_{{ op.result.mode.name }},
+    .timeout_sec = {{ op.result.timeout_sec|default(0) }},
+    .ok_text = "{{ op.result.ok_text or '' }}"
+};
+{% endif %}
+{% endmacro %}
+
+{# Generate all operation configurations first #}
+{% if item.operation %}
+{{ render_operation_configs(item.operation, name) }}
+{% endif %}
+
+{# Generate condition rules if present #}
+{% if item.conditions %}
+static const struct condition_rule_config {{ name }}_rules[] = {
+    {
+        .type = RULE_FEATURE_ENABLED,
+        .rule_data = {
+            .feature = "{{ item.conditions.feature_enabled }}"
+        }
+    }
+};
+{% endif %}
+
+{# Generate children arrays #}
+{% if item.children %}
+static const menu_item_t* const {{ name }}_children[] = {
+    {%- for child in child_names -%}
+    &{{ child }}{{ ", " if not loop.last else "" }}
+    {%- endfor -%}
+};
+{% endif %}
+
+{# Finally, generate the menu item itself #}
+static const menu_item_t {{ name }} = {
+    .label = "{{ item.label|replace('\n', '\\n') }}",
+    .label_short = "{{ item.label_short or ''|replace('\n', '\\n') }}",
+    .icon = "{{ item.icon or '' }}",
+    .shortcut = "{{ item.shortcut or '' }}",
+    .type = MENU_TYPE_{{ item.type.name }},
+    .help_text = "{{ (item.help_text or '')|replace('\n', '\\n') }}",
+    .operation = {
+        .action = {% if item.operation %}"{{ item.operation.action }}"{% else %}NULL{% endif %},
+        .inputs = {% if item.operation and item.operation.input %}&{{ name }}_input_array{% else %}NULL{% endif %},
+        .confirm = {% if item.operation and item.operation.confirm %}&{{ name }}_confirm{% else %}NULL{% endif %},
+        .result = {% if item.operation and item.operation.result %}&{{ name }}_result{% else %}NULL{% endif %}
+    },
+    .conditions = {% if item.conditions %}{
+        .match = CONDITION_MATCH_ALL,
+        .rules = {{ name }}_rules,
+        .rule_count = 1
+    }{% else %}{0}{% endif %},
+    .children = {% if item.children %}{{ name }}_children{% else %}NULL{% endif %},
+    .child_count = {{ child_names|length if item.children else 0 }}
+};
