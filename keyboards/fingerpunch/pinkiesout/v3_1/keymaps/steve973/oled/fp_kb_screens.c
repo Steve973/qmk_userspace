@@ -79,28 +79,65 @@ static const char* get_mod_status(void) {
 
 static const char* get_wpm_status(void) {
     static char buffer[32];
+    uint8_t current = get_current_wpm();
+    snprintf(buffer, sizeof(buffer), "%d   ", current);
+    return buffer;
+}
+
+static const char* get_peak_wpm_status(void) {
+    static char buffer[32];
     static uint8_t peak_wpm = 0;
     uint8_t current = get_current_wpm();
     if (current > peak_wpm) {
         peak_wpm = current;
     }
-    snprintf(buffer, sizeof(buffer), "%3d (%3d)", current, peak_wpm);
+    snprintf(buffer, sizeof(buffer), "%d   ", peak_wpm);
     return buffer;
 }
 
 static const char* get_keycount_status(void) {
     static char buffer[32];
-    snprintf(buffer, sizeof(buffer), "%lu", keypress_count);
+    snprintf(buffer, sizeof(buffer), "%lu   ", keypress_count);
     return buffer;
 }
 
-static const char* get_rgb_status(void) {
+static const char* get_rgb_hue_status(void) {
     static char buffer[32];
     if (rgb_matrix_is_enabled()) {
-        snprintf(buffer, sizeof(buffer), "HSV:%3d,%3d,%3d M:%d",
-            rgb_matrix_get_hue(),
-            rgb_matrix_get_sat(),
-            rgb_matrix_get_val(),
+        snprintf(buffer, sizeof(buffer), "%d   ",
+            rgb_matrix_get_hue());
+    } else {
+        snprintf(buffer, sizeof(buffer), "Off");
+    }
+    return buffer;
+}
+
+static const char* get_rgb_sat_status(void) {
+    static char buffer[32];
+    if (rgb_matrix_is_enabled()) {
+        snprintf(buffer, sizeof(buffer), "%d   ",
+            rgb_matrix_get_sat());
+    } else {
+        snprintf(buffer, sizeof(buffer), "Off");
+    }
+    return buffer;
+}
+
+static const char* get_rgb_val_status(void) {
+    static char buffer[32];
+    if (rgb_matrix_is_enabled()) {
+        snprintf(buffer, sizeof(buffer), "%d   ",
+            rgb_matrix_get_val());
+    } else {
+        snprintf(buffer, sizeof(buffer), "Off");
+    }
+    return buffer;
+}
+
+static const char* get_rgb_mode_status(void) {
+    static char buffer[32];
+    if (rgb_matrix_is_enabled()) {
+        snprintf(buffer, sizeof(buffer), "%d   ",
             rgb_matrix_get_mode());
     } else {
         snprintf(buffer, sizeof(buffer), "Off");
@@ -108,7 +145,25 @@ static const char* get_rgb_status(void) {
     return buffer;
 }
 
-static const char* get_key_rates(void) {
+static const char* get_kps(void) {
+    static char buffer[32];
+    static uint32_t last_time = 0;
+    static uint32_t last_keycount = 0;
+    static uint16_t keys_per_sec = 0;
+
+    uint32_t now = timer_read32();
+    uint32_t elapsed = now - last_time;
+
+    if (elapsed >= 1000) {
+        keys_per_sec = keypress_count - last_keycount;
+        last_keycount = keypress_count;
+        last_time = now;
+    }
+    snprintf(buffer, sizeof(buffer), "%d   ", keys_per_sec);
+    return buffer;
+}
+
+static const char* get_kpm(void) {
     static char buffer[32];
     static uint32_t last_time = 0;
     static uint32_t last_keycount = 0;
@@ -124,7 +179,7 @@ static const char* get_key_rates(void) {
         last_keycount = keypress_count;
         last_time = now;
     }
-    snprintf(buffer, sizeof(buffer), "KPS:%2d KPM:%4d", keys_per_sec, keys_per_min);
+    snprintf(buffer, sizeof(buffer), "%d   ", keys_per_min);
     return buffer;
 }
 
@@ -143,14 +198,19 @@ static mfd_value_pair_t kb_status_pairs[] = {
 };
 
 static mfd_value_pair_t key_status_pairs[] = {
-    { .label = "Keys",     .get_value = get_key_rates },
+    { .label = "KPS",      .get_value = get_kps },
+    { .label = "KPM",      .get_value = get_kpm },
     { .label = "WPM",      .get_value = get_wpm_status },
-    { .label = "Keycount", .get_value = get_keycount_status }
+    { .label = "Peak WPM", .get_value = get_peak_wpm_status },
+    { .label = "Total",    .get_value = get_keycount_status }
 };
 
 static mfd_value_pair_t system_status_pairs[] = {
-    { .label = "RGB",      .get_value = get_rgb_status },
-    { .label = "Uptime",   .get_value = get_uptime }
+    { .label = "RGB Hue",  .get_value = get_rgb_hue_status },
+    { .label = "RGB Sat",  .get_value = get_rgb_sat_status },
+    { .label = "RGB Val",  .get_value = get_rgb_val_status },
+    { .label = "RGB Mode", .get_value = get_rgb_mode_status },
+    { .label = "Uptime",    .get_value = get_uptime }
 };
 
 mfd_screen_t mfd_screens[] = {
