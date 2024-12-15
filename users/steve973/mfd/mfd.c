@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "oled_driver.h"
 #include "oled/timeout_indicator/timeout_indicator.h"
+#include "progmem.h"
 #include "timer.h"
 #include "mfd.h"
 
@@ -33,20 +34,25 @@ static void return_to_default(void) {
 }
 
 static void render_screen_title(const char* title, bool is_default) {
-    char buffer[32];
+    char buffer[18];
     snprintf(buffer, sizeof(buffer), "%s%s%s",
-             is_default ? "* " : "",
+             is_default ? PSTR("* ") : PSTR(""),
              title,
-             is_default ? " *" : "");
+             is_default ? PSTR(" *") : PSTR(""));
+    oled_set_cursor(0, 0);
     oled_write(buffer, false);
+    oled_set_cursor(0, 1);
+    oled_write("", false);
 }
 
 static void render_pairs(const mfd_screen_t* screen, uint8_t start_row, uint8_t start_col) {
+    char buffer[18];
     for (uint8_t i = 0; i < screen->display.simple.pair_count; i++) {
-        oled_set_cursor(start_col, start_row + (i * 2));
-        oled_write(screen->display.simple.pairs[i].label, false);
-        oled_set_cursor(start_col, start_row + (i * 2) + 1);
-        oled_write(screen->display.simple.pairs[i].get_value(), false);
+        snprintf(buffer, sizeof(buffer), "%s: %s",
+                screen->display.simple.pairs[i].label,
+                screen->display.simple.pairs[i].get_value());
+        oled_set_cursor(start_col, start_row + i);
+        oled_write(buffer, false);
     }
 }
 
@@ -96,6 +102,8 @@ void render_current_screen() {
     if (!current_screen_default && !mfd_config.cycle_screens) {
         menu_timeout_token = timeout_indicator_create(mfd_config.timeout_ms, return_to_default);
     }
+
+    oled_render_dirty(true);
 }
 
 void mfd_switch_screen(int8_t new_index) {
@@ -105,10 +113,10 @@ void mfd_switch_screen(int8_t new_index) {
         current_screen = &logo_screen;
         current_screen_default = mfd_config.default_index >= mfd_config.screen_count;
     } else {
-        mfd_config.current_index = new_index;
         current_screen_default = (new_index == mfd_config.default_index);
         current_screen = &mfd_config.screens[new_index];
     }
+    mfd_config.current_index = new_index;
     SCREEN_RENDERED_TIME = 0;
     oled_clear();
     render_current_screen();
@@ -129,8 +137,7 @@ static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
 void mfd_init(void) {
     if (mfd_config.screen_count > 0 && mfd_config.cycle_screens) {
         defer_exec(mfd_config.timeout_ms, cycle_to_next_screen, NULL);
-    }
-    if (mfd_config.screen_count == 0 || mfd_config.default_index >= mfd_config.screen_count) {
+    } else if (mfd_config.screen_count == 0 || mfd_config.default_index >= mfd_config.screen_count) {
         // No default set, show logo
         mfd_switch_screen(LOGO_SCREEN_INDEX);
     } else {
