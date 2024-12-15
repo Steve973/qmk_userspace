@@ -98,7 +98,6 @@ void keyboard_post_init_user() {
     #ifdef JOYSTICK_ENABLE
     fp_post_init_joystick();
     #endif
-    mfd_init();
 }
 
 void housekeeping_task_user(void) {
@@ -111,6 +110,7 @@ void housekeeping_task_user(void) {
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     oled_set_brightness(50);
+    mfd_init();
     return OLED_ROTATION_180;
 }
 
