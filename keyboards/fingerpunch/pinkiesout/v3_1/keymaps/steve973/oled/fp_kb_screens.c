@@ -253,7 +253,7 @@ mfd_config_t mfd_config = {
     .screens = mfd_screens,
     .screen_count = sizeof(mfd_screens) / sizeof(mfd_screens[0]),
     .default_index = LOGO_SCREEN_INDEX,
-    .current_index = INT8_MAX,
+    .current_index = 100,
     .timeout_ms = 30000,
     .cycle_screens = true
 };

@@ -116,9 +116,10 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
 
 bool oled_task_user(void) {
     static int32_t display_timer = 0;
+    int32_t now = timer_read32();
     // Update display every 50ms
-    if (timer_read32() - display_timer >= 50) {
-        display_timer = timer_read32();
+    if (now - display_timer >= 50) {
+        display_timer = now;
         if (is_menu_active()) {
             display_current_menu();
         } else {

@@ -87,6 +87,11 @@ void render_current_screen() {
         return;
     }
 
+    current_screen = mfd_config.current_index == LOGO_SCREEN_INDEX ?
+        &logo_screen :
+        &mfd_config.screens[mfd_config.current_index];
+    current_screen_index = mfd_config.current_index;
+    current_screen_default = current_screen_index == mfd_config.default_index;
     SCREEN_RENDERED_TIME = current_time;
 
     if (current_screen->type == MFD_TYPE_CUSTOM) {
@@ -119,8 +124,6 @@ void mfd_switch_screen(int8_t new_index) {
     if (new_index >= mfd_config.screen_count) {
         return;
     }
-    current_screen = new_index == LOGO_SCREEN_INDEX ? &logo_screen : &mfd_config.screens[new_index];
-    current_screen_default = new_index == mfd_config.default_index;
     mfd_config.current_index = new_index;
     oled_clear();
     render_current_screen();
@@ -144,7 +147,7 @@ static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
 
 void mfd_init(void) {
     if (mfd_config.screen_count > 0 && mfd_config.cycle_screens) {
-        defer_exec(0, cycle_to_next_screen, NULL);
+        defer_exec(10, cycle_to_next_screen, NULL);
     } else if (mfd_config.screen_count == 0 || mfd_config.default_index >= mfd_config.screen_count) {
         // No default set, show logo
         mfd_switch_screen(LOGO_SCREEN_INDEX);
