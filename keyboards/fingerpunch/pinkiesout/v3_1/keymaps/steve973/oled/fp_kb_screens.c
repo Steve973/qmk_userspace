@@ -217,7 +217,7 @@ mfd_screen_t mfd_screens[] = {
     {
         .title = "Keyboard Status",
         .type = MFD_TYPE_SIMPLE,
-        .refresh_interval = 1000,
+        .refresh_interval = 200,
         .position_mode = MFD_POSITION_AUTO,
         .auto_align = MFD_AUTO_ALIGN_TOP,
         .display.simple = {
@@ -228,7 +228,7 @@ mfd_screen_t mfd_screens[] = {
     {
         .title = "Key Stats",
         .type = MFD_TYPE_SIMPLE,
-        .refresh_interval = 1000,
+        .refresh_interval = 200,
         .position_mode = MFD_POSITION_AUTO,
         .auto_align = MFD_AUTO_ALIGN_TOP,
         .display.simple = {
