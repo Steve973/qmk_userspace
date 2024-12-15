@@ -75,8 +75,8 @@ typedef struct {
 typedef struct {
     mfd_screen_t* screens;         // Array of screen definitions
     uint8_t screen_count;          // Number of screens
-    int8_t current_index;         // Currently displayed screen
-    int8_t default_index;         // Index of the default screen
+    int8_t current_index;          // Currently displayed screen
+    int8_t default_index;          // Index of the default screen
     uint32_t timeout_start;        // When current non-default screen started
     const uint32_t timeout_ms;     // 30 seconds in ms
     bool cycle_screens;            // Whether to cycle through screens, using timeout_ms
@@ -86,3 +86,4 @@ extern mfd_config_t mfd_config;    // Screens defined elsewhere
 
 void mfd_init(void);
 void render_current_screen(void);
+void increment_screen(bool positive_increment);

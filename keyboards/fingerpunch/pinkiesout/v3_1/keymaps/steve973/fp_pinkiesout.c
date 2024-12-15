@@ -17,6 +17,7 @@
 #include "action_layer.h"
 #include "action_util.h"
 #include "menu/common/menu_core.h"
+#include "quantum.h"
 #include "quantum/action.h"
 #include "debug.h"
 #include "oled/oled_driver.h"
@@ -45,6 +46,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 } else  {
                     dprintf("Menu initialization failed\n");
                 }
+                return false;
+            }
+            break;
+        case KC_LEFT:
+            if (record->event.pressed && (IS_LAYER_ON(_ADJUST))) {
+                increment_screen(false);
+                return false;
+            }
+            break;
+        case KC_RIGHT:
+            if (record->event.pressed && (IS_LAYER_ON(_ADJUST))) {
+                increment_screen(true);
                 return false;
             }
             break;
@@ -85,6 +98,7 @@ void keyboard_post_init_user() {
     #ifdef JOYSTICK_ENABLE
     fp_post_init_joystick();
     #endif
+    mfd_init();
 }
 
 void housekeeping_task_user(void) {
@@ -97,7 +111,6 @@ void housekeeping_task_user(void) {
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     oled_set_brightness(50);
-    mfd_init();
     return OLED_ROTATION_180;
 }
 

@@ -27,6 +27,10 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
     SRC += $(INTERMEDIATE_OUTPUT)/menu_data.c
 endif
 
+ifeq ($(strip $(QUANTUM_PAINTER_ENABLE)), yes)
+    QUANTUM_PAINTER_DRIVERS += sh1107_i2c
+endif
+
 ifeq ($(strip $(JOYSTICK_ENABLE)), yes)
     ANALOG_DRIVER_REQUIRED = yes
     POINTING_DEVICE_ENABLE = yes

@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "oled_driver.h"
 #include "oled/timeout_indicator/timeout_indicator.h"
@@ -72,13 +73,21 @@ static void render_manual_positioned_pairs(const mfd_screen_t* screen) {
 }
 
 void render_current_screen() {
-    bool initial_render = current_screen_index != mfd_config.current_index;
+    bool is_current_display = current_screen_index == mfd_config.current_index;
     uint16_t refresh_interval = current_screen->refresh_interval;
-    if (!initial_render && (refresh_interval == 0 || timer_read32() < (SCREEN_RENDERED_TIME + current_screen->refresh_interval))) {
+
+    // If we are already displaying the current screen and it is static,
+    // there is nothing to do
+    if (is_current_display && refresh_interval == 0) return;
+
+    uint32_t current_time = timer_read32();
+
+    // If it is not yet time for a refresh, there is nothing to do
+    if (current_time < SCREEN_RENDERED_TIME + refresh_interval) {
         return;
     }
 
-    SCREEN_RENDERED_TIME = timer_read32();
+    SCREEN_RENDERED_TIME = current_time;
 
     if (current_screen->type == MFD_TYPE_CUSTOM) {
         current_screen->display.custom.render();
@@ -107,36 +116,35 @@ void render_current_screen() {
 }
 
 void mfd_switch_screen(int8_t new_index) {
-    if (new_index >= mfd_config.screen_count){
+    if (new_index >= mfd_config.screen_count) {
         return;
-    } else if (new_index == LOGO_SCREEN_INDEX) {
-        current_screen = &logo_screen;
-        current_screen_default = mfd_config.default_index >= mfd_config.screen_count;
-    } else {
-        current_screen_default = (new_index == mfd_config.default_index);
-        current_screen = &mfd_config.screens[new_index];
     }
+    current_screen = new_index == LOGO_SCREEN_INDEX ? &logo_screen : &mfd_config.screens[new_index];
+    current_screen_default = new_index == mfd_config.default_index;
     mfd_config.current_index = new_index;
-    SCREEN_RENDERED_TIME = 0;
     oled_clear();
     render_current_screen();
 }
 
-static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
-    if (mfd_config.cycle_screens) {
-        if (mfd_config.current_index + 1 >= mfd_config.screen_count) {
-            current_screen = &logo_screen;
-            mfd_switch_screen(LOGO_SCREEN_INDEX);
-        } else {
-            mfd_switch_screen((mfd_config.current_index + 1) % mfd_config.screen_count);
-        }
+void increment_screen(bool positive_increment) {
+    int8_t increment = positive_increment ? 1 : -1;
+    int8_t new_index = mfd_config.current_index + increment;
+    if (new_index >= mfd_config.screen_count) {
+        new_index = LOGO_SCREEN_INDEX;
+    } else if (new_index < LOGO_SCREEN_INDEX) {
+        new_index = mfd_config.screen_count - 1;
     }
-    return mfd_config.timeout_ms;
+    mfd_switch_screen(new_index);
+}
+
+static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
+    increment_screen(true);
+    return mfd_config.cycle_screens ? mfd_config.timeout_ms : 0;
 }
 
 void mfd_init(void) {
     if (mfd_config.screen_count > 0 && mfd_config.cycle_screens) {
-        defer_exec(mfd_config.timeout_ms, cycle_to_next_screen, NULL);
+        defer_exec(0, cycle_to_next_screen, NULL);
     } else if (mfd_config.screen_count == 0 || mfd_config.default_index >= mfd_config.screen_count) {
         // No default set, show logo
         mfd_switch_screen(LOGO_SCREEN_INDEX);
