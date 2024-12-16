@@ -72,7 +72,7 @@
                         "type": "action",
                         "help_text": "Select joystick operation mode",
                         "operation": {
-                            "action": "set_stick_mode",
+                            "action": "set_joystick_mode",
                             "input": [{
                                 "type": "options",
                                 "options": ["Arrows", "WASD", "Analog", "Mouse"],
