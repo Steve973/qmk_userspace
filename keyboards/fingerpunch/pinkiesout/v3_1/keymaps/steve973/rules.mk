@@ -13,6 +13,9 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
 	SRC += menu/actions/builtin/postcondition/postcondition.c
 	SRC += menu/actions/builtin/precondition/precondition.c
 	SRC += menu/actions/builtin/result/result.c
+	SRC += menu/actions/user/joystick/joystick_actions.c
+	SRC += menu/actions/user/rgb/rgb_actions.c
+	SRC += menu/actions/user/system/system_actions.c
 	SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/oled/fp_kb_screens.c
 	SRC += oled/fp_logo_128x128.c
 	SRC += oled/timeout_indicator/timeout_indicator.c

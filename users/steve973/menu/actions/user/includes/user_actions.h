@@ -17,3 +17,10 @@ operation_result_t set_rgb_hue(operation_result_t prev_result, void** input_valu
 operation_result_t set_rgb_sat(operation_result_t prev_result, void** input_values);
 operation_result_t set_rgb_val(operation_result_t prev_result, void** input_values);
 operation_result_t set_rgb_speed(operation_result_t prev_result, void** input_values);
+
+// System actions
+operation_result_t reset_eeprom(operation_result_t prev_result, void** input_values);
+operation_result_t enter_bootloader(operation_result_t prev_result, void** input_values);
+operation_result_t test_piezo(operation_result_t prev_result, void** input_values);
+operation_result_t increase_oled_brightness(operation_result_t prev_result, void** input_values);
+operation_result_t decrease_oled_brightness(operation_result_t prev_result, void** input_values);

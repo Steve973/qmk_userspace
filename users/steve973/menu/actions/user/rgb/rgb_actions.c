@@ -56,4 +56,3 @@ operation_result_t set_rgb_speed(operation_result_t prev_result, void** input_va
     }
     return prev_result;
 }
-
