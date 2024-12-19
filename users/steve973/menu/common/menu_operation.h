@@ -25,10 +25,16 @@ typedef enum {
     OPERATION_RESULT_TIMEOUT     // Operation timed out
 } operation_result_t;
 
+typedef struct operation_context {
+    operation_phase_t current_phase;  // Current phase of operation
+    const menu_item_t* item;          // All config comes from here
+    void** phase_data;                // For phase-to-phase communication
+    operation_result_t result;        // Result of the operation
+} operation_context_t;
+
 // Main entry point for operation execution
 operation_result_t execute_operation(const menu_item_t* item);
 
 // Helper functions
 operation_phase_t get_current_operation_phase(void);
 bool is_operation_in_progress(void);
-uint8_t get_operation_input_count(void);

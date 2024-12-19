@@ -3,10 +3,18 @@
 #include "../../../common/menu_operation.h"
 #include "../../display/operation_display.h"
 
-operation_result_t handle_result(operation_result_t prev_result, void** input_values) {
-    const struct result_config* config = (const struct result_config*)input_values[0];
+void handle_result(operation_context_t operation_state) {
+    operation_state.current_phase = OPERATION_PHASE_CONFIRMATION;
+    // This comes after the Action phase, so the previous result should be SUCCESS
+    if (operation_state.result != OPERATION_RESULT_SUCCESS) {
+        operation_state.result = OPERATION_RESULT_ERROR;
+        return;
+    }
+
+    const struct result_config* config = operation_state.item->operation.result;
     if (!config) {
-        return OPERATION_RESULT_ERROR;
+        operation_state.result = OPERATION_RESULT_ERROR;
+        return;
     }
 
     operation_display_config_t display_config = {
@@ -24,7 +32,6 @@ operation_result_t handle_result(operation_result_t prev_result, void** input_va
     };
 
     operation_display_message(&display_config);
-    return operation_display_get_choice() >= 0 ?
-           OPERATION_RESULT_SUCCESS :
-           OPERATION_RESULT_CANCELLED;
+    operation_state.result = operation_display_get_choice() < 0 ?
+        OPERATION_RESULT_CANCELLED : OPERATION_RESULT_SUCCESS;
 }

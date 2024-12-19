@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <progmem.h>
 #include <action.h>
+#include <sys/unistd.h>
 #include "oled/oled_driver.h"
 #include "keycodes.h"
 #include "timer.h"
@@ -141,24 +142,28 @@ bool menu_enter(void) {
     const menu_item_t* current = menu_state.current;
     if (!current) return false;
 
-    if (current->type == MENU_TYPE_ACTION) {
-        if (current->operation.action) {
-            // TODO - What to do with return value?
-            execute_operation(current);
+    // If we're at a submenu, navigate into it
+    if (current->type == MENU_TYPE_SUBMENU) {
+        if (!current->children || current->child_count == 0) {
+            return false;  // Empty submenu
         }
-        return false;
-    }
 
-    if (current->type == MENU_TYPE_SUBMENU && current->children && current->child_count > 0) {
+        // Save current position in history
         if (menu_state.history.depth < MAX_MENU_DEPTH) {
             menu_state.history.items[menu_state.history.depth] = current;
             menu_state.history.indices[menu_state.history.depth] = menu_state.selected_index;
             menu_state.history.depth++;
         }
 
-        menu_state.current = current->children[menu_state.selected_index];
+        // Move to first item in submenu
         menu_state.selected_index = 0;
         oled_clear();
+        return true;
+    }
+
+    // If it's an action, execute it
+    else if (current->type == MENU_TYPE_ACTION && current->operation.action) {
+        execute_operation(current);
         return true;
     }
 
@@ -272,7 +277,10 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
         case KC_D:
         case KC_ENTER:
         case KC_RIGHT:
-            menu_enter();
+            if (current->children && current->child_count > 0) {
+                menu_state.current = current->children[menu_state.selected_index];
+                menu_enter();
+            }
             break;
 
         case KC_A:

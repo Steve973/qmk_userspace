@@ -148,6 +148,40 @@ typedef struct postcondition_config {
     void* args;             // Handler-specific configuration
 } postcondition_config_t;
 
+typedef struct operation_config {
+    const char* action;    // Function name to execute
+
+    const precondition_config_t* precondition;
+
+    // Input configuration array
+    const input_config_t* inputs;  // one or more inputs
+    uint8_t input_count;
+
+    // Confirmation dialog configuration
+    const confirm_config_t* confirm;
+
+    // Result display configuration
+    const result_config_t* result;
+
+    // Postcondition configuration
+    const postcondition_config_t* postcondition;
+} operation_config_t;
+
+typedef struct conditions_config {
+    condition_match_t match;
+    const struct condition_rule_config {
+        rule_type_t type;
+        union rule_data_config {
+            const char* feature;    // Feature flag name
+            struct value_equals_config {
+                const char* variable;
+                const char* value;
+            } value_equals;
+        } rule_data;
+    }* rules;
+    uint8_t rule_count;
+} conditions_config_t;
+
 /**
  * Menu Item Structure
  * Represents a single item in the menu system with all its
@@ -163,41 +197,10 @@ typedef struct menu_item {
     menu_type_t type;          // Item type (action/submenu/display)
 
     // Operation configuration (for action items)
-    // Operation configuration (for action items)
-    struct operation_config {
-        const char* action;    // Function name to execute
-
-        const precondition_config_t* precondition;
-
-        // Input configuration array
-        const input_config_t* inputs;  // one or more inputs
-        uint8_t input_count;
-
-        // Confirmation dialog configuration
-        const confirm_config_t* confirm;
-
-        // Result display configuration
-        const result_config_t* result;
-
-        // Postcondition configuration
-        const postcondition_config_t* postcondition;
-    } operation;
+    operation_config_t operation;
 
     // Visibility conditions
-    struct conditions_config {
-        condition_match_t match;
-        const struct condition_rule_config {
-            rule_type_t type;
-            union rule_data_config {
-                const char* feature;    // Feature flag name
-                struct value_equals_config {
-                    const char* variable;
-                    const char* value;
-                } value_equals;
-            } rule_data;
-        }* rules;
-        uint8_t rule_count;
-    } conditions;
+    conditions_config_t conditions;
 
     // Menu hierarchy
     const struct menu_item* const* children;  // Array of child items

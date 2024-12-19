@@ -2,15 +2,18 @@
 #include "../../../common/menu_operation.h"
 #include "../../display/operation_display.h"
 
-operation_result_t handle_precondition(operation_result_t prev_result, void** input_values) {
+void handle_precondition(operation_context_t operation_state) {
+    operation_state.current_phase = OPERATION_PHASE_PRECONDITION;
     // Precondition is first in the chain, so prev_result should be NONE
-    if (prev_result != OPERATION_RESULT_NONE) {
-        return prev_result;
+    if (operation_state.result != OPERATION_RESULT_NONE) {
+        operation_state.result = OPERATION_RESULT_ERROR;
+        return;
     }
 
-    const struct precondition_config* config = (const struct precondition_config*)input_values[0];
+    const struct precondition_config* config = operation_state.item->operation.precondition;
     if (!config || !config->handler) {
-        return OPERATION_RESULT_ERROR;
+        operation_state.result = OPERATION_RESULT_ERROR;
+        return;
     }
 
     // Set up the display configuration for precondition phase
@@ -29,7 +32,5 @@ operation_result_t handle_precondition(operation_result_t prev_result, void** in
 
     // Call the handler with its args
     operation_result_t (*handler_func)(void*) = (operation_result_t (*)(void*))config->handler;
-    operation_result_t result = handler_func(config->args);
-
-    return result;
+    operation_state.result = handler_func(config->args);
 }

@@ -2,4 +2,4 @@
 
 #include "../../../common/menu_operation.h"
 
-operation_result_t handle_precondition(operation_result_t prev_result, void** input_values);
+void handle_precondition(operation_context_t operation_state);
