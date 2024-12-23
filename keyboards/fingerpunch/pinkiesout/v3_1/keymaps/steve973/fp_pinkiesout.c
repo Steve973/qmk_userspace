@@ -24,6 +24,7 @@
 #include "fp_pinkiesout.h"
 #include "joystick/fp_joystick.h"
 #include "menu/common/menu_core.h"
+#include "display_manager/display_manager.h"
 #include "mfd/mfd.h"
 
 uint32_t keypress_count = 0;
@@ -123,7 +124,7 @@ bool oled_task_user(void) {
         if (is_menu_active()) {
             display_current_menu();
         } else {
-            render_current_screen();
+            show_current_screen();
         }
     }
     return false;

@@ -17,6 +17,8 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
 	SRC += menu/actions/user/rgb/rgb_actions.c
 	SRC += menu/actions/user/system/system_actions.c
 	SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/oled/fp_kb_screens.c
+	SRC += display_manager/display_manager.c
+	SRC += display_manager/display_manager_oled.c
 	SRC += oled/fp_logo_128x128.c
 	SRC += oled/timeout_indicator/timeout_indicator.c
 	SRC += mfd/mfd.c
@@ -28,10 +30,6 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
 		python3 $(MENU_TOOL) $< $@
 
     SRC += $(INTERMEDIATE_OUTPUT)/menu_data.c
-endif
-
-ifeq ($(strip $(QUANTUM_PAINTER_ENABLE)), yes)
-    QUANTUM_PAINTER_DRIVERS += sh1107_i2c
 endif
 
 ifeq ($(strip $(JOYSTICK_ENABLE)), yes)

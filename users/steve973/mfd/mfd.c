@@ -1,132 +1,32 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "oled_driver.h"
-#include "oled/timeout_indicator/timeout_indicator.h"
-#include "progmem.h"
-#include "timer.h"
+#include "deferred_exec.h"
+#include "display_manager/display_manager.h"
 #include "mfd.h"
 
-static uint8_t menu_timeout_token = INVALID_DEFERRED_TOKEN;
-static int32_t SCREEN_RENDERED_TIME = 0;
-
-static const mfd_screen_t logo_screen = {
-    .type = MFD_TYPE_CUSTOM,
-    .refresh_interval = 0,
-    .display.custom = {
-        .render = oled_display_logo
-    }
+static const managed_screen_t logo_screen = {
+    .owner = "mfd",
+    .display.render = &oled_display_logo,
+    .refresh_interval_ms = 0,
+    .is_custom = true
 };
-
-static const mfd_screen_t* current_screen = &logo_screen;
-static bool current_screen_default = true;
-static int8_t current_screen_index = INT8_MIN;
-
-static void return_to_default(void) {
-    current_screen_default = true;
-    if (mfd_config.screen_count > 0 && mfd_config.default_index < mfd_config.screen_count) {
-        mfd_config.current_index = mfd_config.default_index;
-        current_screen = &mfd_config.screens[mfd_config.default_index];
-        render_current_screen();
-    } else {
-        current_screen = &logo_screen;
-        render_current_screen();
-    }
-}
-
-static void render_screen_title(const char* title, bool is_default) {
-    char buffer[18];
-    snprintf(buffer, sizeof(buffer), "%s%s%s",
-             is_default ? PSTR("* ") : PSTR(""),
-             title,
-             is_default ? PSTR(" *") : PSTR(""));
-    oled_set_cursor(0, 0);
-    oled_write(buffer, false);
-    oled_set_cursor(0, 1);
-    oled_write("", false);
-}
-
-static void render_pairs(const mfd_screen_t* screen, uint8_t start_row, uint8_t start_col) {
-    char buffer[18];
-    for (uint8_t i = 0; i < screen->display.simple.pair_count; i++) {
-        snprintf(buffer, sizeof(buffer), "%s: %s",
-                screen->display.simple.pairs[i].label,
-                screen->display.simple.pairs[i].get_value());
-        oled_set_cursor(start_col, start_row + i);
-        oled_write(buffer, false);
-    }
-}
-
-static void render_centered_pairs(const mfd_screen_t* screen) {
-    uint8_t pair_count = screen->display.simple.pair_count;
-    uint8_t start_row = MAX(2, (OLED_DISPLAY_HEIGHT - (pair_count * 2)) / 2);
-    render_pairs(screen, start_row, 0);
-}
-
-static void render_top_aligned_pairs(const mfd_screen_t* screen) {
-    render_pairs(screen, 2, 0);
-}
-
-static void render_manual_positioned_pairs(const mfd_screen_t* screen) {
-    render_pairs(screen, screen->display.simple.start_row,
-                        screen->display.simple.start_col);
-}
-
-void render_current_screen() {
-    bool is_current_display = current_screen_index == mfd_config.current_index;
-    uint16_t refresh_interval = current_screen->refresh_interval;
-
-    // If we are already displaying the current screen and it is static,
-    // there is nothing to do
-    if (is_current_display && refresh_interval == 0) return;
-
-    uint32_t current_time = timer_read32();
-
-    // If it is not yet time for a refresh, there is nothing to do
-    if (current_time < SCREEN_RENDERED_TIME + refresh_interval) {
-        return;
-    }
-
-    current_screen = mfd_config.current_index == LOGO_SCREEN_INDEX ?
-        &logo_screen :
-        &mfd_config.screens[mfd_config.current_index];
-    current_screen_index = mfd_config.current_index;
-    current_screen_default = current_screen_index == mfd_config.default_index;
-    SCREEN_RENDERED_TIME = current_time;
-
-    if (current_screen->type == MFD_TYPE_CUSTOM) {
-        current_screen->display.custom.render();
-        return;
-    }
-
-    // Only do our rendering for simple screens
-    render_screen_title(current_screen->title, current_screen_default);
-
-    if (current_screen->position_mode == MFD_POSITION_AUTO) {
-        if (current_screen->auto_align == MFD_AUTO_ALIGN_CENTER) {
-            render_centered_pairs(current_screen);
-        } else {  // MFD_AUTO_ALIGN_TOP
-            render_top_aligned_pairs(current_screen);
-        }
-    } else {  // MFD_POSITION_MANUAL
-        render_manual_positioned_pairs(current_screen);
-    }
-
-    // Handle timeout indicator
-    if (!current_screen_default && !mfd_config.cycle_screens) {
-        menu_timeout_token = timeout_indicator_create(mfd_config.timeout_ms, return_to_default);
-    }
-
-    oled_render_dirty(true);
-}
 
 void mfd_switch_screen(int8_t new_index) {
     if (new_index >= mfd_config.screen_count) {
         return;
     }
     mfd_config.current_index = new_index;
-    oled_clear();
-    render_current_screen();
+    if (new_index == LOGO_SCREEN_INDEX) {
+        swap_screen(logo_screen);
+    } else {
+        swap_screen((managed_screen_t) {
+            .owner = "mfd",
+            .is_custom = false,
+            .display.content = &mfd_config.screens[new_index],
+            .refresh_interval_ms = 200
+        });
+    }
 }
 
 void increment_screen(bool positive_increment) {

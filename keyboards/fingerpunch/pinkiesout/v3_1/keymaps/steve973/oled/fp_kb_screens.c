@@ -24,6 +24,7 @@
 #include "modifiers.h"
 #include "../fp_pinkiesout.h"
 #include "joystick/fp_joystick.h"
+#include "display_manager/display_manager.h"
 #include "mfd/mfd.h"
 
 static const char* get_layer_status(void) {
@@ -190,63 +191,181 @@ static const char* get_uptime(void) {
     return buffer;
 }
 
-static mfd_value_pair_t kb_status_pairs[] = {
-    { .label = "Layer",    .get_value = get_layer_status },
-    { .label = "Joystick", .get_value = get_joystick_status },
-    { .label = "Lock",     .get_value = get_led_status },
-    { .label = "Mods",     .get_value = get_mod_status }
-};
+/* Copyright 2024 Sadek Baroudi ... */
 
-static mfd_value_pair_t key_status_pairs[] = {
-    { .label = "KPS",      .get_value = get_kps },
-    { .label = "KPM",      .get_value = get_kpm },
-    { .label = "WPM",      .get_value = get_wpm_status },
-    { .label = "Peak WPM", .get_value = get_peak_wpm_status },
-    { .label = "Total",    .get_value = get_keycount_status }
-};
+// ... keep all existing includes ...
 
-static mfd_value_pair_t system_status_pairs[] = {
-    { .label = "RGB Hue",  .get_value = get_rgb_hue_status },
-    { .label = "RGB Sat",  .get_value = get_rgb_sat_status },
-    { .label = "RGB Val",  .get_value = get_rgb_val_status },
-    { .label = "RGB Mode", .get_value = get_rgb_mode_status },
-    { .label = "Uptime",    .get_value = get_uptime }
-};
+// Keep all existing get_* functions exactly as they are...
+// (get_layer_status through get_uptime)
 
-mfd_screen_t mfd_screens[] = {
+static screen_element_t kb_status_elements[] = {
     {
-        .title = "Keyboard Status",
-        .type = MFD_TYPE_SIMPLE,
-        .refresh_interval = 200,
-        .position_mode = MFD_POSITION_AUTO,
-        .auto_align = MFD_AUTO_ALIGN_TOP,
-        .display.simple = {
-            .pairs = kb_status_pairs,
-            .pair_count = sizeof(kb_status_pairs) / sizeof(kb_status_pairs[0])
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 2,
+        .content.key_value = {
+            .label = "Layer",
+            .value.get_value = get_layer_status,
+            .is_dynamic = true
         }
     },
     {
-        .title = "Key Stats",
-        .type = MFD_TYPE_SIMPLE,
-        .refresh_interval = 200,
-        .position_mode = MFD_POSITION_AUTO,
-        .auto_align = MFD_AUTO_ALIGN_TOP,
-        .display.simple = {
-            .pairs = key_status_pairs,
-            .pair_count = sizeof(key_status_pairs) / sizeof(key_status_pairs[0])
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 3,
+        .content.key_value = {
+            .label = "Joystick",
+            .value.get_value = get_joystick_status,
+            .is_dynamic = true
         }
     },
     {
-        .title = "System Status",
-        .type = MFD_TYPE_SIMPLE,
-        .refresh_interval = 1000,
-        .position_mode = MFD_POSITION_AUTO,
-        .auto_align = MFD_AUTO_ALIGN_TOP,
-        .display.simple = {
-            .pairs = system_status_pairs,
-            .pair_count = sizeof(system_status_pairs) / sizeof(system_status_pairs[0])
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 4,
+        .content.key_value = {
+            .label = "Lock",
+            .value.get_value = get_led_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 5,
+        .content.key_value = {
+            .label = "Mods",
+            .value.get_value = get_mod_status,
+            .is_dynamic = true
         }
     }
+};
+
+static screen_element_t key_stats_elements[] = {
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 2,
+        .content.key_value = {
+            .label = "KPS",
+            .value.get_value = get_kps,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 3,
+        .content.key_value = {
+            .label = "KPM",
+            .value.get_value = get_kpm,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 4,
+        .content.key_value = {
+            .label = "WPM",
+            .value.get_value = get_wpm_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 5,
+        .content.key_value = {
+            .label = "Peak WPM",
+            .value.get_value = get_peak_wpm_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 6,
+        .content.key_value = {
+            .label = "Total",
+            .value.get_value = get_keycount_status,
+            .is_dynamic = true
+        }
+    }
+};
+
+static screen_element_t system_status_elements[] = {
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 2,
+        .content.key_value = {
+            .label = "RGB Hue",
+            .value.get_value = get_rgb_hue_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 3,
+        .content.key_value = {
+            .label = "RGB Sat",
+            .value.get_value = get_rgb_sat_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 4,
+        .content.key_value = {
+            .label = "RGB Val",
+            .value.get_value = get_rgb_val_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 5,
+        .content.key_value = {
+            .label = "RGB Mode",
+            .value.get_value = get_rgb_mode_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 6,
+        .content.key_value = {
+            .label = "Uptime",
+            .value.get_value = get_uptime,
+            .is_dynamic = true
+        }
+    }
+};
+
+static screen_content_t mfd_screens[] = {
+    {
+    .title = "Keyboard Status",
+    .elements = kb_status_elements,
+    .element_count = sizeof(kb_status_elements) / sizeof(kb_status_elements[0]),
+    .default_y = 2
+},
+    {
+    .title = "Key Stats",
+    .elements = key_stats_elements,
+    .element_count = sizeof(key_stats_elements) / sizeof(key_stats_elements[0]),
+    .default_y = 2
+},
+    {
+    .title = "System Status",
+    .elements = system_status_elements,
+    .element_count = sizeof(system_status_elements) / sizeof(system_status_elements[0]),
+    .default_y = 2
+}
 };
 
 mfd_config_t mfd_config = {

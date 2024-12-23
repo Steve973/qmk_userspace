@@ -21,6 +21,7 @@
 #include <progmem.h>
 #include <action.h>
 #include <sys/unistd.h>
+#include "display_manager/display_manager.h"
 #include "oled/oled_driver.h"
 #include "keycodes.h"
 #include "timer.h"

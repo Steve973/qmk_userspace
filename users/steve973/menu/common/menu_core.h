@@ -87,16 +87,6 @@ typedef enum {
     COMPARE_LESS_EQUALS
 } compare_operator_t;
 
-/**
- * Selection Style for Menu Display
- */
-typedef enum {
-    SELECTION_HIGHLIGHT,  // Highlight entire item
-    SELECTION_ARROW,      // Show arrow indicator
-    SELECTION_STAR,      // Show star indicator
-    SELECTION_NONE       // No visual selection
-} selection_style_t;
-
 typedef struct precondition_config {
     const char* handler;    // Function name to execute
     const char* message;
