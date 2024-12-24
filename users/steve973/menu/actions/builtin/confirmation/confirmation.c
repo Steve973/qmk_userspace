@@ -10,12 +10,14 @@ void confirmation_init(operation_context_t operation_state) {
     if (operation_state.result != OPERATION_RESULT_SUCCESS &&
         operation_state.result != OPERATION_RESULT_NONE) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
     const struct confirm_config* config = operation_state.item->operation.confirm;
     if (!config) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
@@ -42,8 +44,10 @@ void confirmation_input(operation_context_t operation_state) {
 void confirmation_processing(operation_context_t operation_state) {
     if (operation_state.choice_made == 0) {
         operation_state.result = OPERATION_RESULT_SUCCESS;
+        operation_state.phase_state = PHASE_STATE_COMPLETE;
     } else {
         operation_state.result = OPERATION_RESULT_CANCELLED;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
     }
 }
 

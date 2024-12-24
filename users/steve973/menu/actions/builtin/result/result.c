@@ -8,12 +8,14 @@ void result_init(operation_context_t operation_state) {
     // This comes after the Action phase, so the previous result should be SUCCESS
     if (operation_state.result != OPERATION_RESULT_SUCCESS) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
     const struct result_config* config = operation_state.item->operation.result;
     if (!config) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
@@ -24,16 +26,28 @@ void result_init(operation_context_t operation_state) {
         .display.content = screen,
         .refresh_interval_ms = 0
     });
+
+    operation_state.phase_state = PHASE_STATE_AWAITING_INPUT;
 }
 
 void result_input(operation_context_t operation_state) {
+    const struct result_config* config = operation_state.item->operation.result;
 
+    if (config->mode == RESULT_MODE_ACKNOWLEDGE) {
+        if (operation_state.choice_made >= 0) {
+            operation_state.phase_state = PHASE_STATE_PROCESSING;
+        }
+    } else {  // RESULT_MODE_TIMED
+        // Could check timeout here or let display manager handle timeout
+        operation_state.phase_state = PHASE_STATE_PROCESSING;
+    }
 }
 
 void result_processing(operation_context_t operation_state) {
     pop_screen("menu");
+    operation_state.phase_state = PHASE_STATE_COMPLETE;
 }
 
 void result_complete(operation_context_t operation_state) {
-
+    // Clean up, if necessary
 }

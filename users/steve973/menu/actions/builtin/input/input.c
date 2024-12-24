@@ -92,7 +92,7 @@ void input_input(operation_context_t operation_state) {
                 break;
             }
             case INPUT_TYPE_CUSTOM:
-                // TODO: add the input data to the phase_data
+                // Nothing to do, since the data was added above in the previous phase
                 break;
         }
 

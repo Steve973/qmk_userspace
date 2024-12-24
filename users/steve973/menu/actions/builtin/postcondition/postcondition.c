@@ -10,12 +10,14 @@ void postcondition_init(operation_context_t operation_state) {
     if (operation_state.result != OPERATION_RESULT_SUCCESS &&
         operation_state.result != OPERATION_RESULT_NONE) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
     const struct postcondition_config* config = operation_state.item->operation.postcondition;
     if (!config || !config->handler) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
@@ -41,7 +43,12 @@ void postcondition_processing(operation_context_t operation_state) {
     operation_result_t (*handler_func)(void*) = (operation_result_t (*)(void*))config->handler;
     operation_state.result = handler_func(config->args);
     pop_screen("menu");
-    operation_state.phase_state = PHASE_STATE_COMPLETE;
+    if (operation_state.result != OPERATION_RESULT_SUCCESS) {
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
+        return;
+    } else {
+        operation_state.phase_state = PHASE_STATE_COMPLETE;
+    }
 }
 
 void postcondition_complete(operation_context_t operation_state) {

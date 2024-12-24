@@ -10,12 +10,14 @@ void action_init(operation_context_t operation_state) {
     if (operation_state.result != OPERATION_RESULT_SUCCESS &&
         operation_state.result != OPERATION_RESULT_NONE) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
     const menu_item_t* item = operation_state.item;
     if (!item) {
         operation_state.result = OPERATION_RESULT_ERROR;
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;
     }
 
@@ -45,7 +47,11 @@ void action_processing(operation_context_t operation_state) {
     operation_result_t result = action_function(operation_state.phase_data);
     operation_state.result = result;
     pop_screen("menu");
-    operation_state.phase_state = PHASE_STATE_COMPLETE;
+    if (result == OPERATION_RESULT_CANCELLED || result == OPERATION_RESULT_ERROR) {
+        operation_state.phase_state = PHASE_STATE_CANCELLED;
+    } else {
+        operation_state.phase_state = PHASE_STATE_COMPLETE;
+    }
 }
 
 void action_complete(operation_context_t operation_state) {
