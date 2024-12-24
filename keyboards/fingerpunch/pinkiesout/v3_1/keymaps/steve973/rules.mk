@@ -6,7 +6,7 @@ ifeq ($(strip $(OLED_ENABLE)), yes)
     KEYBOARD_SHARED_EP = yes
     SRC += menu/common/menu_core.c
 	SRC += menu/common/menu_operation.c
-	SRC += menu/actions/display/operation_display.c
+	SRC += menu/display/menu_display.c
 	SRC += menu/actions/builtin/action/action.c
 	SRC += menu/actions/builtin/confirmation/confirmation.c
 	SRC += menu/actions/builtin/input/input.c

@@ -1,9 +1,9 @@
 #include "result.h"
 #include "../../../common/menu_core.h"
 #include "../../../common/menu_operation.h"
-#include "../../display/operation_display.h"
+#include "../../../display/menu_display.h"
 
-void handle_result(operation_context_t operation_state) {
+void result_init(operation_context_t operation_state) {
     operation_state.current_phase = OPERATION_PHASE_CONFIRMATION;
     // This comes after the Action phase, so the previous result should be SUCCESS
     if (operation_state.result != OPERATION_RESULT_SUCCESS) {
@@ -17,21 +17,23 @@ void handle_result(operation_context_t operation_state) {
         return;
     }
 
-    operation_display_config_t display_config = {
-        .type = OPERATION_PHASE_RESULT,
-        .title = "Result",
-        .messages = {
-            config->message,
-            NULL,
-            NULL
-        },
-        .phase_data.result = {
-            .mode = config->mode,
-            .ok_text = config->ok_text
-        }
-    };
+    screen_content_t* screen = create_operation_screen(operation_state.item, OPERATION_PHASE_RESULT);
+    push_screen((managed_screen_t){
+        .owner = "menu",
+        .is_custom = false,
+        .display.content = screen,
+        .refresh_interval_ms = 0
+    });
+}
 
-    operation_display_message(&display_config);
-    operation_state.result = operation_display_get_choice() < 0 ?
-        OPERATION_RESULT_CANCELLED : OPERATION_RESULT_SUCCESS;
+void result_input(operation_context_t operation_state) {
+
+}
+
+void result_processing(operation_context_t operation_state) {
+    pop_screen("menu");
+}
+
+void result_complete(operation_context_t operation_state) {
+
 }

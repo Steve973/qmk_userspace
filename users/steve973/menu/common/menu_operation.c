@@ -27,31 +27,121 @@ operation_result_t execute_operation(const menu_item_t* item) {
     // Run through all phases, passing operation context/state forward
     if (item->operation.precondition) {
         dprint("Running precondition phase\r\n");
-        handle_precondition(operation_state);
+        switch (operation_state.phase_state) {
+            case PHASE_STATE_INIT:
+                precondition_init(operation_state);
+                break;
+            case PHASE_STATE_AWAITING_INPUT:
+                precondition_input(operation_state);
+                break;
+            case PHASE_STATE_PROCESSING:
+                precondition_processing(operation_state);
+                break;
+            case PHASE_STATE_COMPLETE:
+                precondition_complete(operation_state);
+                break;
+            case PHASE_STATE_CANCELLED:
+                break;
+        }
     }
 
     if (item->operation.inputs) {
         dprint("Running input phase\r\n");
-        handle_input(operation_state);
+        switch (operation_state.phase_state) {
+            case PHASE_STATE_INIT:
+                input_init(operation_state);
+                break;
+            case PHASE_STATE_AWAITING_INPUT:
+                input_input(operation_state);
+                break;
+            case PHASE_STATE_PROCESSING:
+                input_processing(operation_state);
+                break;
+            case PHASE_STATE_COMPLETE:
+                input_complete(operation_state);
+                break;
+            case PHASE_STATE_CANCELLED:
+                break;
+        }
     }
 
     if (item->operation.confirm) {
         dprint("Running confirmation phase\r\n");
-        handle_confirmation(operation_state);
+        switch (operation_state.phase_state) {
+            case PHASE_STATE_INIT:
+                confirmation_init(operation_state);
+                break;
+            case PHASE_STATE_AWAITING_INPUT:
+                confirmation_input(operation_state);
+                break;
+            case PHASE_STATE_PROCESSING:
+                confirmation_processing(operation_state);
+                break;
+            case PHASE_STATE_COMPLETE:
+                confirmation_complete(operation_state);
+                break;
+            case PHASE_STATE_CANCELLED:
+                break;
+        }
     }
 
     // Action phase is required
     dprint("Running action phase\r\n");
-    handle_action(operation_state);
+    switch (operation_state.phase_state) {
+        case PHASE_STATE_INIT:
+            action_init(operation_state);
+            break;
+        case PHASE_STATE_AWAITING_INPUT:
+            action_input(operation_state);
+            break;
+        case PHASE_STATE_PROCESSING:
+            action_processing(operation_state);
+            break;
+        case PHASE_STATE_COMPLETE:
+            action_complete(operation_state);
+            break;
+        case PHASE_STATE_CANCELLED:
+            break;
+    }
 
     if (item->operation.result) {
         dprint("Running result phase\r\n");
-        handle_result(operation_state);
+        switch (operation_state.phase_state) {
+            case PHASE_STATE_INIT:
+                result_init(operation_state);
+                break;
+            case PHASE_STATE_AWAITING_INPUT:
+                result_input(operation_state);
+                break;
+            case PHASE_STATE_PROCESSING:
+                result_processing(operation_state);
+                break;
+            case PHASE_STATE_COMPLETE:
+                result_complete(operation_state);
+                break;
+            case PHASE_STATE_CANCELLED:
+                break;
+        }
     }
 
     if (item->operation.postcondition) {
         dprint("Running postcondition phase\r\n");
-        handle_postcondition(operation_state);
+        switch (operation_state.phase_state) {
+            case PHASE_STATE_INIT:
+                postcondition_init(operation_state);
+                break;
+            case PHASE_STATE_AWAITING_INPUT:
+                postcondition_input(operation_state);
+                break;
+            case PHASE_STATE_PROCESSING:
+                postcondition_processing(operation_state);
+                break;
+            case PHASE_STATE_COMPLETE:
+                postcondition_complete(operation_state);
+                break;
+            case PHASE_STATE_CANCELLED:
+                break;
+        }
     }
 
     operation_state.current_phase = OPERATION_PHASE_COMPLETE;

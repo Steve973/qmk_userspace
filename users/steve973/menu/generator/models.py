@@ -2,6 +2,24 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, List, Union
 
+class DisplayElementType(Enum):
+    MESSAGE = "message"
+    INPUT = "input"
+    SELECTION = "selection"
+    LIST = "list"
+
+@dataclass
+class DisplayElement:
+    type: DisplayElementType
+    text: str
+    is_selectable: bool = False
+    selection_char: str = ">"
+
+@dataclass
+class DisplayContent:
+    title: str
+    elements: List[DisplayElement]
+
 class ResultMode(Enum):
     TIMED = "timed"
     ACKNOWLEDGE = "acknowledge"
@@ -45,6 +63,105 @@ class Operation:
     confirm: Optional[ConfirmConfig] = None
     result: Optional[ResultConfig] = None
 
+    def get_display_content(self, phase: str) -> DisplayContent:
+        if phase == "precondition" and self.precondition:
+            return DisplayContent(
+                title=self.action,
+                elements=[
+                    DisplayElement(
+                        type=DisplayElementType.MESSAGE,
+                        text=self.precondition.message,
+                        is_selectable=False
+                    )
+                ]
+            )
+
+        elif phase == "input" and self.inputs:
+            elements = []
+            for idx, input in enumerate(self.inputs):
+                if len(self.inputs) > 1:
+                    elements.append(DisplayElement(
+                        type=DisplayElementType.MESSAGE,
+                        text=f"Input {idx + 1} of {len(self.inputs)}",
+                        is_selectable=False
+                    ))
+                elements.append(DisplayElement(
+                    type=DisplayElementType.INPUT,
+                    text=input.prompt,
+                    is_selectable=True
+                ))
+            return DisplayContent(
+                title=self.action,
+                elements=elements
+            )
+
+        elif phase == "confirm" and self.confirm:
+            return DisplayContent(
+                title=self.action,
+                elements=[
+                    DisplayElement(
+                        type=DisplayElementType.MESSAGE,
+                        text=self.confirm.message,
+                        is_selectable=False
+                    ),
+                    DisplayElement(
+                        type=DisplayElementType.SELECTION,
+                        text=self.confirm.true_text,
+                        is_selectable=True
+                    ),
+                    DisplayElement(
+                        type=DisplayElementType.SELECTION,
+                        text=self.confirm.false_text,
+                        is_selectable=True
+                    )
+                ]
+            )
+
+        elif phase == "action":
+            # Action phase might show progress or status
+            return DisplayContent(
+                title=self.action,
+                elements=[
+                    DisplayElement(
+                        type=DisplayElementType.MESSAGE,
+                        text="Processing...",
+                        is_selectable=False
+                    )
+                ]
+            )
+
+        elif phase == "result" and self.result:
+            elements = [
+                DisplayElement(
+                    type=DisplayElementType.MESSAGE,
+                    text=self.result.message,
+                    is_selectable=False
+                )
+            ]
+            if self.result.mode == ResultMode.ACKNOWLEDGE:
+                elements.append(DisplayElement(
+                    type=DisplayElementType.SELECTION,
+                    text=self.result.ok_text or "OK",
+                    is_selectable=True
+                ))
+            return DisplayContent(
+                title=self.action,
+                elements=elements
+            )
+
+        elif phase == "postcondition" and self.postcondition:
+            return DisplayContent(
+                title=self.action,
+                elements=[
+                    DisplayElement(
+                        type=DisplayElementType.MESSAGE,
+                        text=self.postcondition.message,
+                        is_selectable=False
+                    )
+                ]
+            )
+
+        return None
 
 class MenuType(Enum):
     ACTION = "action"
@@ -106,3 +223,17 @@ class MenuItem:
         # Set parent refs
         for child in self.children:
             child.parent = self
+
+    def get_display_content(self) -> DisplayContent:
+        if self.type == MenuType.SUBMENU:
+            elements = [
+                DisplayElement(
+                    type=DisplayElementType.LIST,
+                    text=child.label,
+                    is_selectable=True
+                ) for child in self.children
+            ]
+            return DisplayContent(
+                title=self.label,
+                elements=elements
+            )

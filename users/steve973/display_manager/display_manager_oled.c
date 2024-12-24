@@ -35,7 +35,7 @@ uint8_t calculate_center_position(const screen_element_t* element) {
     return (OLED_DISPLAY_WIDTH - length) / 2;
 }
 
-void render_title(const char* title, selection_type_t selection) {
+void render_title(const char* title, highlight_type_t selection) {
     if (!title) {
         return;
     }
@@ -43,16 +43,16 @@ void render_title(const char* title, selection_type_t selection) {
     oled_set_cursor(0, 0);
 
     switch(selection) {
-        case SELECTION_HIGHLIGHT:
+        case HIGHLIGHT_INVERTED:
             oled_write(title, true);  // inverted
             break;
-        case SELECTION_PREFIX:
+        case HIGHLIGHT_PREFIX:
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "> %s", title);
             oled_write(display_buffer, false);
             break;
-        case SELECTION_GLYPH:
+        case HIGHLIGHT_GLYPH:
             // Not supported (fall-through)
-        case SELECTION_NONE:
+        case HIGHLIGHT_NONE:
         default:
             oled_write(title, false);
             break;
@@ -75,18 +75,18 @@ void render_list_item(const list_item_t* item, uint8_t x, uint8_t y) {
 
     const char* text = item->is_dynamic ? item->text.get_text() : item->text.static_text;
 
-    switch(item->selection_type) {
-        case SELECTION_HIGHLIGHT:
+    switch(item->highlight_type) {
+        case HIGHLIGHT_INVERTED:
             oled_write(text, true);  // inverted
             break;
-        case SELECTION_PREFIX:
+        case HIGHLIGHT_PREFIX:
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "%c %s",
-                    item->selection.prefix_char, text);
+                    item->highlight.prefix_char, text);
             oled_write(display_buffer, false);
             break;
-        case SELECTION_GLYPH:
+        case HIGHLIGHT_GLYPH:
             // Not supported (fall-through)
-        case SELECTION_NONE:
+        case HIGHLIGHT_NONE:
         default:
             oled_write(text, false);
             break;

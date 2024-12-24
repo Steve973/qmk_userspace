@@ -10,14 +10,20 @@ static screen_stack_t screen_stack = {
 static uint32_t last_refresh = 0;
 
 void render_screen_content(screen_content_t* content) {
+    int8_t highlight_index = content->get_highlight_index ?
+                             content->get_highlight_index() : -1;
+
     // Render title if present
     if (content->title) {
-        render_title(content->title, content->title_selection);
+        render_title(content->title, content->title_highlight);
     }
 
     // Render each element
     for (uint8_t i = 0; i < content->element_count; i++) {
         screen_element_t* element = &content->elements[i];
+
+        element->content.list_item.highlight_type =
+                highlight_index == i ? HIGHLIGHT_INVERTED : HIGHLIGHT_NONE;
 
         // Use default position if element position is 0,0
         uint8_t x = element->x ? element->x : content->default_x;

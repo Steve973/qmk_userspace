@@ -28,11 +28,11 @@ typedef enum {
 } content_type_t;
 
 typedef enum {
-    SELECTION_NONE,
-    SELECTION_HIGHLIGHT,    // Invert the text
-    SELECTION_PREFIX,       // Use prefix character (*, >, etc.)
-    SELECTION_GLYPH         // Use a custom glyph/icon
-} selection_type_t;
+    HIGHLIGHT_NONE,
+    HIGHLIGHT_INVERTED,    // Invert the text
+    HIGHLIGHT_PREFIX,      // Use prefix character (*, >, etc.)
+    HIGHLIGHT_GLYPH        // Use a custom glyph/icon
+} highlight_type_t;
 
 typedef struct {
     const char* label;
@@ -50,11 +50,11 @@ typedef struct {
         const char* (*get_text)(void);
     } text;
     bool is_dynamic;
-    selection_type_t selection_type;
+    highlight_type_t highlight_type;
     union {
-        char prefix_char;         // For SELECTION_PREFIX
-        const uint8_t* glyph;     // For SELECTION_GLYPH
-    } selection;
+        char prefix_char;         // For HIGHLIGHT_PREFIX
+        const uint8_t* glyph;     // For HIGHLIGHT_GLYPH
+    } highlight;
     const uint8_t* icon;          // Optional icon beside text
 } list_item_t;
 
@@ -78,13 +78,15 @@ typedef struct {
 } screen_element_t;
 
 typedef struct {
-    const char* title;        // Optional screen title
-    selection_type_t title_selection;  // In case we need to highlight the title
+    const char* title;                    // Optional screen title
+    highlight_type_t title_highlight;     // In case we need to highlight the title
     screen_element_t* elements;
     uint8_t element_count;
-    uint8_t default_x;        // Default starting position for elements
-    uint8_t default_y;        // that don't specify their own
-    bool center_contents;     // Whether to center elements horizontally
+    uint8_t highlight_index;              // Index of element to highlight
+    uint8_t default_x;                    // Default starting position for elements
+    uint8_t default_y;                    // that don't specify their own
+    bool center_contents;                 // Whether to center elements horizontally
+    int8_t (*get_highlight_index)(void);  // Function pointer to get current highlight
 } screen_content_t;
 
 // This would replace the LVGL union in your managed_screen_t:
@@ -169,7 +171,7 @@ void clear_display(void);
 
 void render_screen_content(screen_content_t* content);
 
-void render_title(const char* title, selection_type_t selection);
+void render_title(const char* title, highlight_type_t highlight);
 
 extern uint8_t calculate_center_position(const screen_element_t* element);
 

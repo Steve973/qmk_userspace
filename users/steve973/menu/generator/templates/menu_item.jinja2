@@ -12,6 +12,66 @@ static const char* const {{ name }}_input{{ loop.index0 }}_options[] = {
 {% endif %}
 {% endfor %}
 
+{% macro render_display_content(content, name) %}
+static const display_element_t {{ name }}_elements[] = {
+    {% for element in content.elements %}
+    {
+        .type = DISPLAY_TYPE_{{ element.type.name }},
+        .text = "{{ element.text }}",
+        .is_selectable = {{ element.is_selectable|lower }}
+    }{{ "," if not loop.last }}
+    {% endfor %}
+};
+
+static const display_content_t {{ name }}_display = {
+    .title = "{{ content.title }}",
+    .elements = {{ name }}_elements,
+    .element_count = {{ content.elements|length }}
+};
+{% endmacro %}
+
+{# Generate all configurations first #}
+{% if item.operation %}
+    {{ render_operation_configs(item.operation, name) }}
+
+    {# Generate display content for each operation phase #}
+    {% set precondition_display = item.operation.get_display_content('precondition') %}
+    {% if precondition_display %}
+        {{ render_display_content(precondition_display, name ~ '_precondition') }}
+    {% endif %}
+
+    {% set input_display = item.operation.get_display_content('input') %}
+    {% if input_display %}
+        {{ render_display_content(input_display, name ~ '_input') }}
+    {% endif %}
+
+    {% set confirm_display = item.operation.get_display_content('confirm') %}
+    {% if confirm_display %}
+        {{ render_display_content(confirm_display, name ~ '_confirm') }}
+    {% endif %}
+
+    {% set action_display = item.operation.get_display_content('action') %}
+    {% if action_display %}
+        {{ render_display_content(action_display, name ~ '_action') }}
+    {% endif %}
+
+    {% set result_display = item.operation.get_display_content('result') %}
+    {% if result_display %}
+        {{ render_display_content(result_display, name ~ '_result') }}
+    {% endif %}
+
+    {% set postcondition_display = item.operation.get_display_content('postcondition') %}
+    {% if postcondition_display %}
+        {{ render_display_content(postcondition_display, name ~ '_postcondition') }}
+    {% endif %}
+{% endif %}
+
+{# Generate menu display content #}
+{% set menu_display = item.get_display_content() %}
+{% if menu_display %}
+    {{ render_display_content(menu_display, name) }}
+{% endif %}
+
 {# Then generate the input configs #}
 static const struct input_config {{ name }}_inputs[] = {
     {% for input in op.input %}
@@ -103,6 +163,12 @@ static const menu_item_t {{ name }} = {
         .inputs = {% if item.operation and item.operation.input %}&{{ name }}_input_array{% else %}NULL{% endif %},
         .confirm = {% if item.operation and item.operation.confirm %}&{{ name }}_confirm{% else %}NULL{% endif %},
         .result = {% if item.operation and item.operation.result %}&{{ name }}_result{% else %}NULL{% endif %}
+        .precondition_display = {% if precondition_display %}&{{ name }}_precondition_display{% else %}NULL{% endif %},
+        .input_display = {% if input_display %}&{{ name }}_input_display{% else %}NULL{% endif %},
+        .confirm_display = {% if confirm_display %}&{{ name }}_confirm_display{% else %}NULL{% endif %},
+        .action_display = {% if action_display %}&{{ name }}_action_display{% else %}NULL{% endif %},
+        .result_display = {% if result_display %}&{{ name }}_result_display{% else %}NULL{% endif %},
+        .postcondition_display = {% if postcondition_display %}&{{ name }}_postcondition_display{% else %}NULL{% endif %}
     },
     .conditions = {% if item.conditions %}{
         .match = CONDITION_MATCH_ALL,
@@ -110,5 +176,6 @@ static const menu_item_t {{ name }} = {
         .rule_count = 1
     }{% else %}{0}{% endif %},
     .children = {% if item.children %}{{ name }}_children{% else %}NULL{% endif %},
-    .child_count = {{ child_names|length if item.children else 0 }}
+    .child_count = {{ child_names|length if item.children else 0 }},
+    .display = {% if menu_display %}&{{ name }}_display{% else %}NULL{% endif %}
 };

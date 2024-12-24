@@ -121,11 +121,7 @@ bool oled_task_user(void) {
     // Update display every 50ms
     if (now - display_timer >= 50) {
         display_timer = now;
-        if (is_menu_active()) {
-            display_current_menu();
-        } else {
-            show_current_screen();
-        }
+        show_current_screen();
     }
     return false;
 }

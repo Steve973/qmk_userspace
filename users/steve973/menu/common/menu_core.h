@@ -22,6 +22,17 @@
 /* Maximum depth of menu nesting allowed */
 #define MAX_MENU_DEPTH 8
 
+typedef enum {
+    NAV_CONTEXT_MENU,
+    NAV_CONTEXT_PRECONDITION,
+    NAV_CONTEXT_INPUT,          // Input options
+    NAV_CONTEXT_CONFIRMATION,   // Yes/No
+    NAV_CONTEXT_ACTION,         // Execute
+    NAV_CONTEXT_RESULT,         // Acknowledge
+    NAV_CONTEXT_POSTCONDITION,
+    NAV_CONTEXT_INVALID
+} nav_context_t;
+
 /**
  * Menu Types - Defines the behavior of a menu item
  * ACTION:   Executes a function when selected
@@ -86,6 +97,25 @@ typedef enum {
     COMPARE_GREATER_EQUALS,
     COMPARE_LESS_EQUALS
 } compare_operator_t;
+
+typedef enum {
+    DISPLAY_TYPE_MESSAGE,
+    DISPLAY_TYPE_INPUT,
+    DISPLAY_TYPE_SELECTION,
+    DISPLAY_TYPE_LIST
+} display_element_type_t;
+
+typedef struct {
+    display_element_type_t type;
+    const char* text;
+    bool is_selectable;
+} display_element_t;
+
+typedef struct {
+    const char* title;
+    const display_element_t* elements;
+    uint8_t element_count;
+} display_content_t;
 
 typedef struct precondition_config {
     const char* handler;    // Function name to execute
@@ -155,6 +185,14 @@ typedef struct operation_config {
 
     // Postcondition configuration
     const postcondition_config_t* postcondition;
+
+    // Display content for each phase
+    const display_content_t* precondition_display;
+    const display_content_t* input_display;
+    const display_content_t* confirm_display;
+    const display_content_t* action_display;
+    const display_content_t* result_display;
+    const display_content_t* postcondition_display;
 } operation_config_t;
 
 typedef struct conditions_config {
@@ -195,6 +233,9 @@ typedef struct menu_item {
     // Menu hierarchy
     const struct menu_item* const* children;  // Array of child items
     uint8_t child_count;
+
+    // Optimization for more easily generating display content
+    const display_content_t* display;
 } menu_item_t;
 
 /* Public API Functions */
