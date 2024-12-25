@@ -124,6 +124,15 @@ void set_menu_active(bool active) {
     if (active) {
         update_menu_activity();
         menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &menu_exit);
+
+        // Push initial menu screen
+        screen_content_t* screen = create_menu_screen(menu_root);
+        push_screen((managed_screen_t){
+            .owner = "menu",
+            .is_custom = false,
+            .display.content = screen,
+            .refresh_interval_ms = 0
+        });
     } else {
         timeout_indicator_cancel(menu_timeout_token);
         clear_keyboard();
@@ -152,7 +161,17 @@ bool menu_enter(void) {
             menu_state.history.depth++;
         }
 
+        // Create and push new submenu screen
+        screen_content_t* screen = create_menu_screen(current->children[menu_state.selected_index]);
+        push_screen((managed_screen_t){
+            .owner = "menu",
+            .is_custom = false,
+            .display.content = screen,
+            .refresh_interval_ms = 0
+        });
+
         // Move to first item in submenu
+        menu_state.current = current->children[menu_state.selected_index];
         menu_state.selected_index = 0;
         return true;
     }
@@ -182,6 +201,7 @@ bool menu_back(void) {
     }
 
     if (menu_state.history.depth > 0) {
+        pop_screen("menu");
         menu_state.history.depth--;
         menu_state.current = menu_state.history.items[menu_state.history.depth];
         menu_state.selected_index = menu_state.history.indices[menu_state.history.depth];
@@ -189,10 +209,6 @@ bool menu_back(void) {
     }
 
     return false;
-}
-
-void display_current_menu(void) {
-    show_current_screen();
 }
 
 static void handle_navigation(uint16_t keycode, nav_context_t context) {
@@ -242,7 +258,7 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
         case KC_LEFT:
             if (context == NAV_CONTEXT_MENU) {
                 if (menu_state.history.depth == 0) {
-                    set_menu_active(false);
+                    menu_exit();
                 } else {
                     menu_back();
                 }

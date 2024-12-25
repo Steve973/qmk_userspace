@@ -10,8 +10,14 @@ static screen_stack_t screen_stack = {
 static uint32_t last_refresh = 0;
 
 void render_screen_content(screen_content_t* content) {
-    int8_t highlight_index = content->get_highlight_index ?
-                             content->get_highlight_index() : -1;
+    if (!content) {
+        return;
+    }
+
+    int8_t highlight_index = -1;
+    if (content->get_highlight_index) {
+        highlight_index = content->get_highlight_index();
+    }
 
     // Render title if present
     if (content->title) {
@@ -21,9 +27,15 @@ void render_screen_content(screen_content_t* content) {
     // Render each element
     for (uint8_t i = 0; i < content->element_count; i++) {
         screen_element_t* element = &content->elements[i];
+        if (!element) {
+            continue;
+        }
 
-        element->content.list_item.highlight_type =
-                highlight_index == i ? HIGHLIGHT_INVERTED : HIGHLIGHT_NONE;
+        // Only set highlight for list items and only if they exist
+        if (element->type == CONTENT_TYPE_LIST) {
+            element->content.list_item.highlight_type =
+                (highlight_index == i) ? HIGHLIGHT_INVERTED : HIGHLIGHT_NONE;
+        }
 
         // Use default position if element position is 0,0
         uint8_t x = element->x ? element->x : content->default_x;
@@ -92,7 +104,7 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
 
 screen_push_status_t push_screen(managed_screen_t screen) {
     if ((screen.is_custom && screen.display.render == NULL) ||
-        (!screen.is_custom && screen.display.content == NULL)) {  // Changed check
+        (!screen.is_custom && screen.display.content == NULL)) {
         return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     if (screen.owner == NULL) {

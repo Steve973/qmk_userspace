@@ -112,6 +112,7 @@ void housekeeping_task_user(void) {
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     oled_set_brightness(50);
     mfd_init();
+    menu_init();
     return OLED_ROTATION_180;
 }
 

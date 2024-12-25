@@ -18,7 +18,7 @@ static screen_content_t* convert_display_content(const display_content_t* displa
             .content.list_item = {
                 .text.static_text = src->text,
                 .is_dynamic = false,
-                .highlight_type = src->is_selectable ? HIGHLIGHT_PREFIX : HIGHLIGHT_NONE,
+                .highlight_type = src->is_selectable ? HIGHLIGHT_INVERTED : HIGHLIGHT_NONE,
                 .highlight.prefix_char = '>' // TODO: Make this configurable
             }
         };
