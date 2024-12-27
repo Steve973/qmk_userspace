@@ -9,6 +9,7 @@
 
 typedef struct {
     uint8_t id;                   // Public identifier
+    uint32_t start_time;          // Time of creation
     uint32_t timeout_ms;          // Timeout duration
     deferred_token token;         // Internal QMK token
     void (*callback)(void);       // Callback defined within struct

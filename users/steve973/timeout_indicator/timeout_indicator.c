@@ -13,7 +13,7 @@ static uint32_t check_timeout(uint32_t trigger_time, void* cb_arg) {
     if (state.stack_depth == 0) return 0;
 
     timeout_entry_t* current = &state.stack[state.stack_depth - 1];
-    uint32_t elapsed = timer_read32();
+    uint32_t elapsed = timer_read32() - current->start_time;
 
     if (elapsed >= current->timeout_ms) {
         void (*cb)(void) = current->callback;
@@ -40,10 +40,14 @@ uint8_t timeout_indicator_create(uint32_t timeout_ms, void (*callback)(void)) {
 
     // Push new timeout to stack
     timeout_entry_t* new_entry = &state.stack[state.stack_depth++];
-    new_entry->timeout_ms = timeout_ms;
-    new_entry->callback = callback;
-    new_entry->id = id;
-    new_entry->token = defer_exec(100, check_timeout, NULL);
+    *new_entry = (timeout_entry_t){
+        .id = id,
+        .start_time = timer_read32(),
+        .timeout_ms = timeout_ms,
+        .token = 0,  // Initialize to 0 or INVALID_DEFERRED_TOKEN
+        .callback = callback
+    };
+    new_entry->token = defer_exec(TIMEOUT_INDICATOR_REFRESH_MS, check_timeout, NULL);
 
     return id;
 }
@@ -65,7 +69,7 @@ void timeout_indicator_cancel(uint8_t timeout_id) {
             // If there's still a timeout on the stack, start it fresh
             if (state.stack_depth > 0) {
                 timeout_entry_t* current = &state.stack[state.stack_depth - 1];
-                current->token = defer_exec(100, check_timeout, NULL);
+                current->token = defer_exec(TIMEOUT_INDICATOR_REFRESH_MS, check_timeout, NULL);
             }
             break;
         }
@@ -78,7 +82,7 @@ void timeout_indicator_reset(uint8_t timeout_id) {
     // Find the entry with this id
     for (int i = 0; i < state.stack_depth; i++) {
         if (state.stack[i].id == timeout_id) {
-            state.stack[i].timeout_ms = timer_read32() + state.stack[i].timeout_ms;
+            state.stack[i].start_time = timer_read32();
             break;
         }
     }

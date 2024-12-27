@@ -100,7 +100,7 @@ void set_menu_mode_lighting(bool enabled) {
 
 /* Public API Implementation */
 bool menu_init(void) {
-    dprintf("Initializing menu\n");
+    dprintln("Initializing menu system");
     menu_state = (menu_state_t) {
         .current = menu_root,
         .selected_index = 0,
@@ -127,15 +127,23 @@ void menu_exit(void) {
     set_menu_active(false);
 }
 
+int8_t get_current_highlight_index(void) {
+    return menu_state.selected_index;
+}
+
 void set_menu_active(bool active) {
     if (active && !menu_active) {
-        // Add debug prints to track execution
-        dprintf("Setting menu active, creating root screen\n");
         menu_active = true;
         menu_init();
 
         // Create and push new submenu screen
         screen_content_t* screen = create_menu_screen(menu_state.current);
+
+        // Provide the function to get the current highlight index
+        // for the display manager to use for showing the selected
+        // item in the menu
+        screen->get_highlight_index = &get_current_highlight_index;
+
         push_screen((managed_screen_t){
             .owner = MENU_OWNER,
             .is_custom = false,
@@ -146,22 +154,14 @@ void set_menu_active(bool active) {
         update_menu_activity();
         menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &menu_exit);
     } else if (!active && menu_active) {
-        dprintf("Deactivating menu\n");
         timeout_indicator_cancel(menu_timeout_token);
-        dprintf("Clearing keyboard...\n");
         // Remove the main menu screen
         pop_screen(MENU_OWNER);
         clear_keyboard();
-        dprintf("Setting menu active to false...\n");
         menu_active = false;
         clear_display();
     }
-    dprintf("Setting menu mode lighting 'active' to %d\n", active);
-    wait_ms(100);
     set_menu_mode_lighting(active);
-    wait_ms(100);
-    dprintf("Menu active state set (complete)\n");
-    wait_ms(100);
 }
 
 bool menu_enter(void) {
@@ -181,6 +181,12 @@ bool menu_enter(void) {
 
         // Create and push new submenu screen
         screen_content_t* screen = create_menu_screen(current->children[menu_state.selected_index]);
+
+        // Provide the function to get the current highlight index
+        // for the display manager to use for showing the selected
+        // item in the menu
+        screen->get_highlight_index = &get_current_highlight_index;
+
         push_screen((managed_screen_t){
             .owner = MENU_OWNER,
             .is_custom = false,
@@ -237,7 +243,7 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
     // Set up context-specific vars
     if (context == NAV_CONTEXT_MENU) {
         if (!menu_state.current) {
-            dprintf("Error: menu_state.current is NULL\n");
+            dprintln("Error: menu_state.current is NULL");
             return;
         }
         item_count = menu_state.current->child_count;
@@ -246,7 +252,7 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
                 item_count, *selected_index);
     } else {
         if (!menu_state.operation.item) {
-            dprintf("Error: operation item is NULL\n");
+            dprintln("Error: operation item is NULL");
             return;
         }
         item_count = menu_state.operation.item->operation.input_count;
@@ -258,7 +264,7 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
     switch (keycode) {
         case KC_W:
         case KC_UP:
-            dprintf("Up navigation\n");
+            dprintln("Up navigation");
             if (*selected_index > 0) {
                 (*selected_index)--;
                 dprintf("Selected index decreased to %d\n", *selected_index);
@@ -270,22 +276,22 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
 
         case KC_S:
         case KC_DOWN:
-            dprintf("Down navigation\n");
+            dprintln("Down navigation");
             if (*selected_index < item_count - 1) {
                 (*selected_index)++;
                 dprintf("Selected index increased to %d\n", *selected_index);
             } else {
                 *selected_index = 0;
-                dprintf("Wrapped to top\n");
+                dprintln("Wrapped to top");
             }
             break;
 
         case KC_D:
         case KC_ENTER:
         case KC_RIGHT:
-            dprintf("Enter/Right navigation\n");
+            dprintln("Enter/Right navigation");
             if (context == NAV_CONTEXT_MENU) {
-                dprintf("Attempting menu enter\n");
+                dprintln("Attempting menu enter");
                 menu_enter();
             }
             break;
@@ -293,18 +299,18 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
         case KC_A:
         case KC_ESC:
         case KC_LEFT:
-            dprintf("Exit/Left navigation\n");
+            dprintln("Exit/Left navigation");
             if (context == NAV_CONTEXT_MENU) {
-                dprintf("Attempting menu back\n");
+                dprintln("Attempting menu back");
                 if (menu_state.history.depth == 0) {
-                    dprintf("At root menu, exiting\n");
+                    dprintln("At root menu, exiting");
                     set_menu_active(false);
                 } else {
-                    dprintf("Going back one level\n");
+                    dprintln("Going back one level");
                     menu_back();
                 }
             }
-            dprintf("Exit/Left navigation complete\n");
+            dprintln("Exit/Left navigation complete");
             break;
 
         default:
@@ -324,7 +330,7 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
             }
             break;
     }
-    dprintf("Navigation handling complete\n");
+    dprintln("Navigation handling complete");
 }
 
 /* Input Processing */
@@ -373,7 +379,7 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
     handle_navigation(keycode, context);
     update_menu_activity();
 
-    dprintf("Menu record processing complete\n");
+    dprintln("Menu record processing complete");
     return false;
 }
 

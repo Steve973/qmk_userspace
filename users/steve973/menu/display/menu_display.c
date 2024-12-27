@@ -55,7 +55,9 @@ static screen_content_t* convert_display_content(const display_content_t* displa
         .element_count = display->element_count,
         .default_y = 2,
         .center_contents = false,
-        .get_highlight_index = NULL  // Will be set by menu core if needed
+        // Initialized to null, but will be set by menu core if the
+        // screen content has selectable elements
+        .get_highlight_index = NULL
     };
 
     return screen;
