@@ -91,7 +91,7 @@ typedef struct {
 
 // This would replace the LVGL union in your managed_screen_t:
 typedef struct {
-    char* owner;
+    const char* owner;
     bool is_custom;
     union {
         screen_content_t* content;    // For structured content
@@ -135,7 +135,7 @@ screen_push_status_t swap_screen(managed_screen_t screen);
  * can be displayed. The screen owner parameter  must match the owner of the top
  * screen in the stack in order for it to be popped.
  */
-screen_pop_status_t pop_screen(char *owner);
+screen_pop_status_t pop_screen(const char *owner);
 
 /**
  * @brief Gets the owner of the current/top screen of the stack.
@@ -143,7 +143,7 @@ screen_pop_status_t pop_screen(char *owner);
  * This function returns the owner of the screen that is on the top of the stack
  * and is currently being displayed.
  */
-char* get_current_screen_owner(void);
+const char* get_current_screen_owner(void);
 
 /**
  * @brief Gets the size of the screen stack.

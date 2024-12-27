@@ -8,6 +8,7 @@
 // Single frame
 
 #include <stdint.h>
+#include "quantum/painter/qp.h"
 #include "qmk-logo-128.qgf.h"
 
 const uint32_t gfx_qmk_logo_128_length = 1591;

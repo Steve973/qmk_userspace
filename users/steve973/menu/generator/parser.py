@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 from typing import Any, Dict, Union
-from .models import MenuItem, Operation, InputConfig, ConfirmConfig, ResultConfig, ResultMode, InputType, Conditions, FeatureRule, ValueRule, RuleGroup, MatchType
+from .models import MenuItem, Operation, PreconditionConfig, InputConfig, ConfirmConfig, ResultConfig, PostconditionConfig, ResultMode, InputType, Conditions, FeatureRule, ValueRule, RuleGroup, MatchType
 
 
 def parse_menu_config(json_path: Union[str, Path]) -> MenuItem:
@@ -48,10 +48,16 @@ def parse_menu_item(data: Dict[str, Any]) -> MenuItem:
 
 def parse_operation(data: Dict[str, Any]) -> Operation:
     """Parse operation configuration"""
+    precondition_config = None
+    if "precondition" in data:
+        precondition_config = PreconditionConfig(
+            handler=data["precondition"]["handler"],
+            message=data["precondition"]["message"],
+            args=data["precondition"].get("args")
+        )
 
     input_configs = None
     if "input" in data:
-        # Parse array of inputs
         input_configs = [parse_input_config(input_data)
                         for input_data in data["input"]]
 
@@ -63,11 +69,21 @@ def parse_operation(data: Dict[str, Any]) -> Operation:
     if "result" in data:
         result_config = parse_result_config(data["result"])
 
+    postcondition_config = None
+    if "postcondition" in data:
+        postcondition_config = PostconditionConfig(
+            handler=data["postcondition"]["handler"],
+            message=data["postcondition"]["message"],
+            args=data["postcondition"].get("args")
+        )
+
     return Operation(
         action=data["action"],
-        inputs=input_configs,  # Changed from input to inputs
+        precondition=precondition_config,
+        inputs=input_configs,
         confirm=confirm_config,
-        result=result_config
+        result=result_config,
+        postcondition=postcondition_config
     )
 
 

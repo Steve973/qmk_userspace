@@ -4,6 +4,8 @@
 #include "../common/menu_core.h"
 #include "../common/menu_operation.h"
 
+#define MENU_OWNER "menu"
+
 // Main function to create screen content from a menu item
 screen_content_t* create_menu_screen(const menu_item_t* menu_item);
 

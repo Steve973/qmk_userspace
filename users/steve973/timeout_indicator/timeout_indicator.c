@@ -1,23 +1,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "timer.h"
-#include "oled_driver.h"
 #include "timeout_indicator.h"
 
 static uint8_t next_id = 1;
 
 static timeout_indicator_state_t state = { .stack_depth = 0 };
 
-static void draw_indicator(uint32_t elapsed, uint32_t timeout_ms) {
-    uint8_t height = OLED_DISPLAY_HEIGHT;
-    uint16_t progress = (elapsed << 8) / timeout_ms;
-    uint16_t remaining_fixed = 256 - progress;
-    uint8_t remaining = (height * remaining_fixed) >> 8;
-
-    for (uint8_t i = 0; i < height; i++) {
-        oled_write_pixel(OLED_DISPLAY_WIDTH-1, i, i < remaining);
-    }
-}
+extern void draw_indicator(uint32_t elapsed, uint32_t timeout_ms);
 
 static uint32_t check_timeout(uint32_t trigger_time, void* cb_arg) {
     if (state.stack_depth == 0) return 0;

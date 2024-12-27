@@ -21,17 +21,24 @@
 #include <progmem.h>
 #include <action.h>
 #include <sys/unistd.h>
+#include "debug.h"
 #include "display_manager/display_manager.h"
 #include "keycodes.h"
 #include "timer.h"
 #include "src/fp_rgb_common.h"
-#include "oled/timeout_indicator/timeout_indicator.h"
+#include "timeout_indicator/timeout_indicator.h"
 #include "../display/menu_display.h"
 #include "menu/common/menu_operation.h"
 #include "menu/common/menu_core.h"
 
 #define ITEMS_PER_PAGE 10
 #define DEFAULT_TIMEOUT_MS 30000
+
+// History for menuback navigation
+typedef struct {
+    const menu_item_t* items[MAX_MENU_DEPTH];
+    uint8_t depth;
+} menu_history_t;
 
 /* Menu State Management - Internal */
 typedef struct menu_state {
@@ -43,12 +50,8 @@ typedef struct menu_state {
     // Display state
     bool show_shortcuts;             // Show keyboard shortcuts
 
-    // History for back navigation
-    struct {
-        const menu_item_t* items[MAX_MENU_DEPTH];
-        uint8_t indices[MAX_MENU_DEPTH];
-        uint8_t depth;
-    } history;
+    // Menu history
+    menu_history_t history;          // Navigation history
 
     // Operation state
     struct {
@@ -97,6 +100,7 @@ void set_menu_mode_lighting(bool enabled) {
 
 /* Public API Implementation */
 bool menu_init(void) {
+    dprintf("Initializing menu\n");
     menu_state = (menu_state_t) {
         .current = menu_root,
         .selected_index = 0,
@@ -119,29 +123,45 @@ bool is_menu_active(void) {
     return menu_active;
 }
 
-void set_menu_active(bool active) {
-    menu_active = active;
-    if (active) {
-        update_menu_activity();
-        menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &menu_exit);
+void menu_exit(void) {
+    set_menu_active(false);
+}
 
-        // Push initial menu screen
-        screen_content_t* screen = create_menu_screen(menu_root);
+void set_menu_active(bool active) {
+    if (active && !menu_active) {
+        // Add debug prints to track execution
+        dprintf("Setting menu active, creating root screen\n");
+        menu_active = true;
+        menu_init();
+
+        // Create and push new submenu screen
+        screen_content_t* screen = create_menu_screen(menu_state.current);
         push_screen((managed_screen_t){
-            .owner = "menu",
+            .owner = MENU_OWNER,
             .is_custom = false,
             .display.content = screen,
             .refresh_interval_ms = 0
         });
-    } else {
-        timeout_indicator_cancel(menu_timeout_token);
-        clear_keyboard();
-    }
-    set_menu_mode_lighting(active);
-}
 
-void menu_exit(void) {
-    set_menu_active(false);
+        update_menu_activity();
+        menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &menu_exit);
+    } else if (!active && menu_active) {
+        dprintf("Deactivating menu\n");
+        timeout_indicator_cancel(menu_timeout_token);
+        dprintf("Clearing keyboard...\n");
+        // Remove the main menu screen
+        pop_screen(MENU_OWNER);
+        clear_keyboard();
+        dprintf("Setting menu active to false...\n");
+        menu_active = false;
+        clear_display();
+    }
+    dprintf("Setting menu mode lighting 'active' to %d\n", active);
+    wait_ms(100);
+    set_menu_mode_lighting(active);
+    wait_ms(100);
+    dprintf("Menu active state set (complete)\n");
+    wait_ms(100);
 }
 
 bool menu_enter(void) {
@@ -156,15 +176,13 @@ bool menu_enter(void) {
 
         // Save current position in history
         if (menu_state.history.depth < MAX_MENU_DEPTH) {
-            menu_state.history.items[menu_state.history.depth] = current;
-            menu_state.history.indices[menu_state.history.depth] = menu_state.selected_index;
-            menu_state.history.depth++;
+            menu_state.history.items[menu_state.history.depth++] = current;
         }
 
         // Create and push new submenu screen
         screen_content_t* screen = create_menu_screen(current->children[menu_state.selected_index]);
         push_screen((managed_screen_t){
-            .owner = "menu",
+            .owner = MENU_OWNER,
             .is_custom = false,
             .display.content = screen,
             .refresh_interval_ms = 0
@@ -201,10 +219,9 @@ bool menu_back(void) {
     }
 
     if (menu_state.history.depth > 0) {
-        pop_screen("menu");
-        menu_state.history.depth--;
-        menu_state.current = menu_state.history.items[menu_state.history.depth];
-        menu_state.selected_index = menu_state.history.indices[menu_state.history.depth];
+        pop_screen(MENU_OWNER);
+        menu_state.current = menu_state.history.items[--menu_state.history.depth];
+        menu_state.selected_index = 0;
        return true;
     }
 
@@ -212,68 +229,94 @@ bool menu_back(void) {
 }
 
 static void handle_navigation(uint16_t keycode, nav_context_t context) {
+    dprintf("Navigation: keycode=%u, context=%d\n", keycode, context);
+
     uint8_t item_count;
     uint8_t* selected_index;
 
     // Set up context-specific vars
     if (context == NAV_CONTEXT_MENU) {
+        if (!menu_state.current) {
+            dprintf("Error: menu_state.current is NULL\n");
+            return;
+        }
         item_count = menu_state.current->child_count;
         selected_index = &menu_state.selected_index;
+        dprintf("Menu navigation: items=%d, current_index=%d\n",
+                item_count, *selected_index);
     } else {
+        if (!menu_state.operation.item) {
+            dprintf("Error: operation item is NULL\n");
+            return;
+        }
         item_count = menu_state.operation.item->operation.input_count;
         selected_index = &menu_state.selected_index;
+        dprintf("Operation navigation: items=%d, current_index=%d\n",
+                item_count, *selected_index);
     }
 
     switch (keycode) {
         case KC_W:
         case KC_UP:
+            dprintf("Up navigation\n");
             if (*selected_index > 0) {
                 (*selected_index)--;
+                dprintf("Selected index decreased to %d\n", *selected_index);
             } else {
                 *selected_index = item_count - 1;
+                dprintf("Wrapped to bottom: %d\n", *selected_index);
             }
             break;
 
         case KC_S:
         case KC_DOWN:
+            dprintf("Down navigation\n");
             if (*selected_index < item_count - 1) {
                 (*selected_index)++;
+                dprintf("Selected index increased to %d\n", *selected_index);
             } else {
                 *selected_index = 0;
+                dprintf("Wrapped to top\n");
             }
             break;
 
         case KC_D:
         case KC_ENTER:
         case KC_RIGHT:
+            dprintf("Enter/Right navigation\n");
             if (context == NAV_CONTEXT_MENU) {
+                dprintf("Attempting menu enter\n");
                 menu_enter();
-            } else {
-                // Selection made for other contexts
             }
             break;
 
         case KC_A:
         case KC_ESC:
         case KC_LEFT:
+            dprintf("Exit/Left navigation\n");
             if (context == NAV_CONTEXT_MENU) {
+                dprintf("Attempting menu back\n");
                 if (menu_state.history.depth == 0) {
-                    menu_exit();
+                    dprintf("At root menu, exiting\n");
+                    set_menu_active(false);
                 } else {
+                    dprintf("Going back one level\n");
                     menu_back();
                 }
-            } else {
-                // Cancel for other contexts
             }
+            dprintf("Exit/Left navigation complete\n");
             break;
 
         default:
-            // Handle shortcuts only for menu context
-            if (context == NAV_CONTEXT_MENU && menu_state.show_shortcuts && menu_state.current->children) {
+            dprintf("Checking shortcuts for keycode: %u\n", keycode);
+            if (context == NAV_CONTEXT_MENU &&
+                menu_state.show_shortcuts &&
+                menu_state.current->children) {
                 // Handle shortcuts
                 for (uint8_t i = 0; i < menu_state.current->child_count; i++) {
                     const menu_item_t* item = menu_state.current->children[i];
                     if (item->shortcut && keycode == item->shortcut[0]) {
+                        dprintf("Shortcut found for item %d\n", i);
                         menu_state.selected_index = i;
                         menu_enter();
                     }
@@ -281,14 +324,18 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
             }
             break;
     }
+    dprintf("Navigation handling complete\n");
 }
 
 /* Input Processing */
 bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
+    dprintf("Menu record: keycode=%u, pressed=%d\n", keycode, record->event.pressed);
     if (!record->event.pressed) return false;
 
     const menu_item_t* current = menu_state.current;
     if (!current) return false;
+
+    dprintf("Current menu item: %s\n", current->label);
 
     nav_context_t context = NAV_CONTEXT_INVALID;
 
@@ -321,8 +368,12 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
         context = NAV_CONTEXT_MENU;
     }
 
+    dprintf("Navigation context: %d\n", context);
+
     handle_navigation(keycode, context);
     update_menu_activity();
+
+    dprintf("Menu record processing complete\n");
     return false;
 }
 

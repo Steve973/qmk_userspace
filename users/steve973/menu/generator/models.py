@@ -56,12 +56,27 @@ class ResultConfig:
     timeout_sec: Optional[int] = None
     ok_text: Optional[str] = None
 
+
+@dataclass
+class PreconditionConfig:
+    handler: str
+    message: str
+    args: Optional[dict] = None
+
+@dataclass
+class PostconditionConfig:
+    handler: str
+    message: str
+    args: Optional[dict] = None
+
 @dataclass
 class Operation:
     action: str
+    precondition: Optional[PreconditionConfig] = None
     inputs: Optional[List[InputConfig]] = None
     confirm: Optional[ConfirmConfig] = None
     result: Optional[ResultConfig] = None
+    postcondition: Optional[PostconditionConfig] = None
 
     def get_display_content(self, phase: str) -> DisplayContent:
         if phase == "precondition" and self.precondition:

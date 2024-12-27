@@ -36,7 +36,7 @@ void action_processing(operation_context_t operation_state) {
     // Show what we're doing
     screen_content_t* screen = create_operation_screen(operation_state.item, OPERATION_PHASE_ACTION);
     push_screen((managed_screen_t){
-        .owner = "menu",
+        .owner = MENU_OWNER,
         .is_custom = false,
         .display.content = screen,
         .refresh_interval_ms = 0
@@ -46,7 +46,7 @@ void action_processing(operation_context_t operation_state) {
     operation_result_t (*action_function)(void**) = (operation_result_t (*)(void**))operation_state.item->operation.action;
     operation_result_t result = action_function(operation_state.phase_data);
     operation_state.result = result;
-    pop_screen("menu");
+    pop_screen(MENU_OWNER);
     if (result == OPERATION_RESULT_CANCELLED || result == OPERATION_RESULT_ERROR) {
         operation_state.phase_state = PHASE_STATE_CANCELLED;
     } else {

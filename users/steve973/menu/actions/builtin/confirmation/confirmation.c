@@ -23,7 +23,7 @@ void confirmation_init(operation_context_t operation_state) {
 
     screen_content_t* screen = create_operation_screen(operation_state.item, OPERATION_PHASE_CONFIRMATION);
     push_screen((managed_screen_t){
-        .owner = "menu",
+        .owner = MENU_OWNER,
         .is_custom = false,
         .display.content = screen,
         .refresh_interval_ms = 0
@@ -36,7 +36,7 @@ void confirmation_input(operation_context_t operation_state) {
     if (operation_state.result == OPERATION_RESULT_CANCELLED || operation_state.result == OPERATION_RESULT_ERROR) {
         operation_state.phase_state = PHASE_STATE_CANCELLED;
     } else if (operation_state.choice_made > -1) {
-        pop_screen("menu");
+        pop_screen(MENU_OWNER);
         operation_state.phase_state = PHASE_STATE_PROCESSING;
     }
 }

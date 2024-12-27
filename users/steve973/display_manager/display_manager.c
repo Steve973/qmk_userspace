@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
+#include "debug.h"
 #include "display_manager.h"
 #include "timer.h"
 
@@ -8,6 +10,23 @@ static screen_stack_t screen_stack = {
 };
 
 static uint32_t last_refresh = 0;
+
+static const char* const screen_push_status_strings[] = {
+    [SCREEN_PUSH_SUCCESS] = "SCREEN_PUSH_SUCCESS",
+    [SCREEN_PUSH_FAIL_SCREEN_NULL] = "SCREEN_PUSH_FAIL_SCREEN_NULL",
+    [SCREEN_PUSH_FAIL_OWNER_NULL] = "SCREEN_PUSH_FAIL_OWNER_NULL",
+    [SCREEN_PUSH_FAIL_STACK_FULL] = "SCREEN_PUSH_FAIL_STACK_FULL",
+    [SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK] = "SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK",
+    [SCREEN_PUSH_FAIL_OWNER_MISMATCH] = "SCREEN_PUSH_FAIL_OWNER_MISMATCH"
+};
+
+static const char* const screen_pop_status_strings[] = {
+    [SCREEN_POP_SUCCESS] = "SCREEN_POP_SUCCESS",
+    [SCREEN_POP_FAIL_STACK_EMPTY] = "SCREEN_POP_FAIL_STACK_EMPTY",
+    [SCREEN_POP_FAIL_OWNER_NULL] = "SCREEN_POP_FAIL_OWNER_NULL",
+    [SCREEN_POP_FAIL_OWNER_MISMATCH] = "SCREEN_POP_FAIL_OWNER_MISMATCH",
+    [SCREEN_POP_FAIL_SCREEN_NOT_IN_STACK] = "SCREEN_POP_FAIL_SCREEN_NOT_IN_STACK"
+};
 
 void render_screen_content(screen_content_t* content) {
     if (!content) {
@@ -69,12 +88,15 @@ void render_screen_content(screen_content_t* content) {
 screen_push_status_t swap_screen(managed_screen_t screen) {
     if ((screen.is_custom && screen.display.render == NULL) ||
         (!screen.is_custom && screen.display.content == NULL)) {
+        dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_SCREEN_NULL]);
         return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     if (screen.owner == NULL) {
+        dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_OWNER_NULL]);
         return SCREEN_PUSH_FAIL_OWNER_NULL;
     }
     if (screen_stack.top >= 9) {
+        dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_STACK_FULL]);
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
 
@@ -83,6 +105,7 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
         managed_screen_t current_screen = screen_stack.screens[i];
         if ((screen.is_custom && screen.display.render == current_screen.display.render) ||
             (!screen.is_custom && screen.display.content == current_screen.display.content)) {
+            dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK]);
             return SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK;
         }
     }
@@ -92,6 +115,7 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
     } else {
         managed_screen_t current_screen = screen_stack.screens[screen_stack.top];
         if (strcmp(current_screen.owner, screen.owner) != 0) {
+            dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_OWNER_MISMATCH]);
             return SCREEN_PUSH_FAIL_OWNER_MISMATCH;
         }
     }
@@ -105,12 +129,15 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
 screen_push_status_t push_screen(managed_screen_t screen) {
     if ((screen.is_custom && screen.display.render == NULL) ||
         (!screen.is_custom && screen.display.content == NULL)) {
+        dprintf("Failed to push screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_SCREEN_NULL]);
         return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     if (screen.owner == NULL) {
+        dprintf("Failed to push screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_OWNER_NULL]);
         return SCREEN_PUSH_FAIL_OWNER_NULL;
     }
     if (screen_stack.top >= 9) {
+        dprintf("Failed to push screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_STACK_FULL]);
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
 
@@ -119,6 +146,7 @@ screen_push_status_t push_screen(managed_screen_t screen) {
         managed_screen_t current_screen = screen_stack.screens[i];
         if ((screen.is_custom && screen.display.render == current_screen.display.render) ||
             (!screen.is_custom && screen.display.content == current_screen.display.content)) {
+            dprintf("Failed to push screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK]);
             return SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK;
         }
     }
@@ -128,18 +156,23 @@ screen_push_status_t push_screen(managed_screen_t screen) {
     return SCREEN_PUSH_SUCCESS;
 }
 
-screen_pop_status_t pop_screen(char* owner) {
+screen_pop_status_t pop_screen(const char* owner) {
     if (owner == NULL) {
+        dprintf("Failed to pop screen: %s\n", screen_pop_status_strings[SCREEN_POP_FAIL_OWNER_NULL]);
         return SCREEN_POP_FAIL_OWNER_NULL;
     }
 
     if (screen_stack.top < 0) {
+        dprintf("Failed to pop screen: %s\n", screen_pop_status_strings[SCREEN_POP_FAIL_STACK_EMPTY]);
         return SCREEN_POP_FAIL_STACK_EMPTY;
     }
 
     if (strcmp(screen_stack.screens[screen_stack.top].owner, owner) != 0) {
+        dprintf("Failed to pop screen: %s\n", screen_pop_status_strings[SCREEN_POP_FAIL_OWNER_MISMATCH]);
         return SCREEN_POP_FAIL_OWNER_MISMATCH;
     }
+
+    --screen_stack.top;
 
     clear_display();
     return SCREEN_POP_SUCCESS;
@@ -163,7 +196,7 @@ void show_current_screen(void) {
     }
 }
 
-char* get_current_screen_owner(void) {
+const char* get_current_screen_owner(void) {
     if (screen_stack.top < 0) {
         return NULL;
     }

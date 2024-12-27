@@ -21,7 +21,7 @@ void result_init(operation_context_t operation_state) {
 
     screen_content_t* screen = create_operation_screen(operation_state.item, OPERATION_PHASE_RESULT);
     push_screen((managed_screen_t){
-        .owner = "menu",
+        .owner = MENU_OWNER,
         .is_custom = false,
         .display.content = screen,
         .refresh_interval_ms = 0
@@ -44,7 +44,7 @@ void result_input(operation_context_t operation_state) {
 }
 
 void result_processing(operation_context_t operation_state) {
-    pop_screen("menu");
+    pop_screen(MENU_OWNER);
     operation_state.phase_state = PHASE_STATE_COMPLETE;
 }
 

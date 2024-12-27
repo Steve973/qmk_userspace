@@ -24,7 +24,7 @@ void postcondition_init(operation_context_t operation_state) {
     // Set up the display configuration for precondition phase
     screen_content_t* screen = create_operation_screen(operation_state.item, OPERATION_PHASE_POSTCONDITION);
     push_screen((managed_screen_t){
-        .owner = "menu",
+        .owner = MENU_OWNER,
         .is_custom = false,
         .display.content = screen,
         .refresh_interval_ms = 0
@@ -42,7 +42,7 @@ void postcondition_processing(operation_context_t operation_state) {
     const struct postcondition_config* config = operation_state.item->operation.postcondition;
     operation_result_t (*handler_func)(void*) = (operation_result_t (*)(void*))config->handler;
     operation_state.result = handler_func(config->args);
-    pop_screen("menu");
+    pop_screen(MENU_OWNER);
     if (operation_state.result != OPERATION_RESULT_SUCCESS) {
         operation_state.phase_state = PHASE_STATE_CANCELLED;
         return;

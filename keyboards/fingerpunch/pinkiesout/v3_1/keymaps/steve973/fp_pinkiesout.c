@@ -42,11 +42,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case KC_M:
             if (record->event.pressed && (get_mods() & MOD_MASK_ALT)) {
-                if (menu_init()) {
-                    set_menu_active(true);
-                } else  {
-                    dprintf("Menu initialization failed\n");
-                }
+                set_menu_active(true);
                 return false;
             }
             break;
@@ -112,7 +108,6 @@ void housekeeping_task_user(void) {
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     oled_set_brightness(50);
     mfd_init();
-    menu_init();
     return OLED_ROTATION_180;
 }
 

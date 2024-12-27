@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <qp.h>
+#include <stdint.h>
 
 extern const uint32_t gfx_qmk_logo_128_length;
 extern const uint8_t  gfx_qmk_logo_128[1591];

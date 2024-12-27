@@ -1,23 +1,18 @@
-{# Helper macro for operation configurations #}
-{% macro render_operation_configs(op, name) %}
-{% if op.input %}
-{# First generate any option arrays needed by inputs #}
-{% for input in op.input %}
-{% if input.type.name == "OPTIONS" %}
-static const char* const {{ name }}_input{{ loop.index0 }}_options[] = {
-    {% for option in input.options %}
-    "{{ option }}",
-    {% endfor %}
-};
-{% endif %}
-{% endfor %}
+{# Debug output at start of template processing #}
+{# {{ item.label }} #}
+{# {{ "Has operation" if item.operation else "No operation" }} #}
+{# {{ "Has children: " ~ item.children|length if item.children else "No children" }} #}
 
+{#
+  Top-level display content macro - used throughout template to generate
+  display_content_t and display_element_t structures. Moved to top for global scope.
+#}
 {% macro render_display_content(content, name) %}
 static const display_element_t {{ name }}_elements[] = {
     {% for element in content.elements %}
     {
         .type = DISPLAY_TYPE_{{ element.type.name }},
-        .text = "{{ element.text }}",
+        .text = "{{ element.text|replace('\n', '\\n') }}",
         .is_selectable = {{ element.is_selectable|lower }}
     }{{ "," if not loop.last }}
     {% endfor %}
@@ -30,51 +25,26 @@ static const display_content_t {{ name }}_display = {
 };
 {% endmacro %}
 
-{# Generate all configurations first #}
-{% if item.operation %}
-    {{ render_operation_configs(item.operation, name) }}
-
-    {# Generate display content for each operation phase #}
-    {% set precondition_display = item.operation.get_display_content('precondition') %}
-    {% if precondition_display %}
-        {{ render_display_content(precondition_display, name ~ '_precondition') }}
-    {% endif %}
-
-    {% set input_display = item.operation.get_display_content('input') %}
-    {% if input_display %}
-        {{ render_display_content(input_display, name ~ '_input') }}
-    {% endif %}
-
-    {% set confirm_display = item.operation.get_display_content('confirm') %}
-    {% if confirm_display %}
-        {{ render_display_content(confirm_display, name ~ '_confirm') }}
-    {% endif %}
-
-    {% set action_display = item.operation.get_display_content('action') %}
-    {% if action_display %}
-        {{ render_display_content(action_display, name ~ '_action') }}
-    {% endif %}
-
-    {% set result_display = item.operation.get_display_content('result') %}
-    {% if result_display %}
-        {{ render_display_content(result_display, name ~ '_result') }}
-    {% endif %}
-
-    {% set postcondition_display = item.operation.get_display_content('postcondition') %}
-    {% if postcondition_display %}
-        {{ render_display_content(postcondition_display, name ~ '_postcondition') }}
-    {% endif %}
-{% endif %}
-
-{# Generate menu display content #}
-{% set menu_display = item.get_display_content() %}
-{% if menu_display %}
-    {{ render_display_content(menu_display, name) }}
-{% endif %}
-
-{# Then generate the input configs #}
-static const struct input_config {{ name }}_inputs[] = {
+{#
+  Operation configurations macro - handles input option arrays and input configs.
+  Simplified to focus just on input-related structures.
+#}
+{% macro render_operation_configs(op, name) %}
+{% if op.input %}
+    {# Generate option arrays needed for input configs #}
     {% for input in op.input %}
+        {% if input.type.name == "OPTIONS" %}
+static const char* const {{ name }}_input{{ loop.index0 }}_options[] = {
+            {% for option in input.options %}
+    "{{ option }}",
+            {% endfor %}
+};
+        {% endif %}
+    {% endfor %}
+
+    {# Generate input configuration structures #}
+static const struct input_config {{ name }}_inputs[] = {
+        {% for input in op.input %}
     {
         .type = INPUT_TYPE_{{ input.type.name }},
         .prompt = "{{ input.prompt|replace('\n', '\\n') }}",
@@ -96,7 +66,7 @@ static const struct input_config {{ name }}_inputs[] = {
             {% endif %}
         }
     }{{ "," if not loop.last }}
-    {% endfor %}
+        {% endfor %}
 };
 
 static const struct input_array_config {{ name }}_input_array = {
@@ -105,28 +75,76 @@ static const struct input_array_config {{ name }}_input_array = {
 };
 {% endif %}
 
-{% if op.confirm %}
+    {% if op.confirm %}
 static const struct confirm_config {{ name }}_confirm = {
     .message = "{{ op.confirm.message|replace('\n', '\\n') }}",
     .timeout_sec = {{ op.confirm.timeout_sec|default(0) }},
     .true_text = "{{ op.confirm.true_text or 'Yes' }}",
     .false_text = "{{ op.confirm.false_text or 'No' }}"
 };
-{% endif %}
+    {% endif %}
 
-{% if op.result %}
+    {% if op.result %}
 static const struct result_config {{ name }}_result = {
     .message = "{{ op.result.message|replace('\n', '\\n') }}",
     .mode = RESULT_MODE_{{ op.result.mode.name }},
     .timeout_sec = {{ op.result.timeout_sec|default(0) }},
     .ok_text = "{{ op.result.ok_text or '' }}"
 };
-{% endif %}
+    {% endif %}
 {% endmacro %}
 
-{# Generate all operation configurations first #}
+{# Generate operation-related display content for all operation phases #}
 {% if item.operation %}
-{{ render_operation_configs(item.operation, name) }}
+    {# Call operation configs macro to generate input/confirm/result structures #}
+    {{ render_operation_configs(item.operation, name) }}
+
+    {# Generate display content for each operation phase if it exists #}
+    {% if item.operation.precondition %}
+        {% set precondition_display = item.operation.get_display_content('precondition') %}
+        {% if precondition_display %}
+            {{ render_display_content(precondition_display, name ~ '_precondition') }}
+        {% endif %}
+    {% endif %}
+
+    {% if item.operation.inputs %}
+        {% set input_display = item.operation.get_display_content('input') %}
+        {% if input_display %}
+            {{ render_display_content(input_display, name ~ '_input') }}
+        {% endif %}
+    {% endif %}
+
+    {% if item.operation.confirm %}
+        {% set confirm_display = item.operation.get_display_content('confirm') %}
+        {% if confirm_display %}
+            {{ render_display_content(confirm_display, name ~ '_confirm') }}
+        {% endif %}
+    {% endif %}
+
+    {% set action_display = item.operation.get_display_content('action') %}
+    {% if action_display %}
+        {{ render_display_content(action_display, name ~ '_action') }}
+    {% endif %}
+
+    {% if item.operation.result %}
+        {% set result_display = item.operation.get_display_content('result') %}
+        {% if result_display %}
+            {{ render_display_content(result_display, name ~ '_result') }}
+        {% endif %}
+    {% endif %}
+
+    {% if item.operation.postcondition %}
+        {% set postcondition_display = item.operation.get_display_content('postcondition') %}
+        {% if postcondition_display %}
+            {{ render_display_content(postcondition_display, name ~ '_postcondition') }}
+        {% endif %}
+    {% endif %}
+{% endif %}
+
+{# Generate menu's own display content (separate from operation displays) #}
+{% set menu_display = item.get_display_content() %}
+{% if menu_display %}
+    {{ render_display_content(menu_display, name) }}
 {% endif %}
 
 {# Generate condition rules if present #}
@@ -141,7 +159,7 @@ static const struct condition_rule_config {{ name }}_rules[] = {
 };
 {% endif %}
 
-{# Generate children arrays #}
+{# Generate children array for submenu types #}
 {% if item.children %}
 static const menu_item_t* const {{ name }}_children[] = {
     {%- for child in child_names -%}
@@ -150,7 +168,7 @@ static const menu_item_t* const {{ name }}_children[] = {
 };
 {% endif %}
 
-{# Finally, generate the menu item itself #}
+{# Generate the menu item structure, referencing all previously generated components #}
 static const menu_item_t {{ name }} = {
     .label = "{{ item.label|replace('\n', '\\n') }}",
     .label_short = "{{ item.label_short or ''|replace('\n', '\\n') }}",
@@ -162,7 +180,7 @@ static const menu_item_t {{ name }} = {
         .action = {% if item.operation %}"{{ item.operation.action }}"{% else %}NULL{% endif %},
         .inputs = {% if item.operation and item.operation.input %}&{{ name }}_input_array{% else %}NULL{% endif %},
         .confirm = {% if item.operation and item.operation.confirm %}&{{ name }}_confirm{% else %}NULL{% endif %},
-        .result = {% if item.operation and item.operation.result %}&{{ name }}_result{% else %}NULL{% endif %}
+        .result = {% if item.operation and item.operation.result %}&{{ name }}_result{% else %}NULL{% endif %},
         .precondition_display = {% if precondition_display %}&{{ name }}_precondition_display{% else %}NULL{% endif %},
         .input_display = {% if input_display %}&{{ name }}_input_display{% else %}NULL{% endif %},
         .confirm_display = {% if confirm_display %}&{{ name }}_confirm_display{% else %}NULL{% endif %},
