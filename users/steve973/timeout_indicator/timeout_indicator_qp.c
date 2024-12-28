@@ -2,7 +2,7 @@
 #include "quantum/painter/qp.h"
 #include "timeout_indicator.h"
 
-#define PIXEL_ON 1
+#define PIXEL_ON 128
 #define PIXEL_OFF 0
 
 extern painter_device_t display;
