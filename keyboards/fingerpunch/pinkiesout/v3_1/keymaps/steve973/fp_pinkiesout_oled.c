@@ -14,24 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "timer.h"
+#include "oled/oled_driver.h"
+#include "mfd/mfd.h"
+#include "display_manager/display_manager.h"
 
-#define DISPLAY_WIDTH 128
-#define DISPLAY_HEIGHT 128
-#define DISPLAY_ADDRESS 0x3D
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    oled_set_brightness(50);
+    #ifdef MFD_ENABLE
+        mfd_init();
+    #endif
+    return OLED_ROTATION_180;
+}
 
-#ifdef QUANTUM_PAINTER_ENABLE
-  #undef SH1106_SET_START_LINE
-  #define SH1106_SET_START_LINE 0xDC
-#endif
-
-#ifdef OLED_ENABLE
-  #undef OLED_DISPLAY_ADDRESS
-  #define OLED_DISPLAY_ADDRESS   DISPLAY_ADDRESS
-  #define OLED_DISPLAY_128X128
-  #define OLED_PRE_CHARGE_PERIOD 0x22
-  #define OLED_VCOM_DETECT       0x35
-#endif
-
-#define EECONFIG_USER_DATA_SIZE 23
-#define FP_USER_CONFIG_VERSION 1
+bool oled_task_user(void) {
+    static int32_t display_timer = 0;
+    int32_t now = timer_read32();
+    // Update display every 50ms
+    if (now - display_timer >= 50) {
+        display_timer = now;
+        show_current_screen();
+    }
+    return false;
+}

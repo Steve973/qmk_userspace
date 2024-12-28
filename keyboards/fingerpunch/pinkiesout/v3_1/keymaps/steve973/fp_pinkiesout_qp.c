@@ -14,24 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "quantum/painter/qp.h"
+#include "drivers/painter/sh1106/qp_sh1106.h"
+#include "keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/config.h"
+#include "display_manager/fonts/thintel15.qff.h"
+#include "fp_pinkiesout.h"
+#include "mfd/mfd.h"
 
-#define DISPLAY_WIDTH 128
-#define DISPLAY_HEIGHT 128
-#define DISPLAY_ADDRESS 0x3D
+painter_device_t display;
+painter_font_handle_t font;
 
-#ifdef QUANTUM_PAINTER_ENABLE
-  #undef SH1106_SET_START_LINE
-  #define SH1106_SET_START_LINE 0xDC
-#endif
-
-#ifdef OLED_ENABLE
-  #undef OLED_DISPLAY_ADDRESS
-  #define OLED_DISPLAY_ADDRESS   DISPLAY_ADDRESS
-  #define OLED_DISPLAY_128X128
-  #define OLED_PRE_CHARGE_PERIOD 0x22
-  #define OLED_VCOM_DETECT       0x35
-#endif
-
-#define EECONFIG_USER_DATA_SIZE 23
-#define FP_USER_CONFIG_VERSION 1
+void init_display(void) {
+    font = qp_load_font_mem(&font_thintel15);
+    display = qp_sh1106_make_i2c_device(DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_ADDRESS);
+    qp_init(display, QP_ROTATION_180);
+    #ifdef MFD_ENABLE
+        mfd_init();
+    #endif
+}

@@ -22,7 +22,7 @@
 #include "quantum/rgb_matrix/rgb_matrix.h"
 #include "wpm.h"
 #include "modifiers.h"
-#include "../fp_pinkiesout.h"
+#include "fp_pinkiesout.h"
 #include "joystick/fp_joystick.h"
 #include "display_manager/display_manager.h"
 #include "mfd/mfd.h"
@@ -191,13 +191,6 @@ static const char* get_uptime(void) {
     return buffer;
 }
 
-/* Copyright 2024 Sadek Baroudi ... */
-
-// ... keep all existing includes ...
-
-// Keep all existing get_* functions exactly as they are...
-// (get_layer_status through get_uptime)
-
 static screen_element_t kb_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
@@ -349,23 +342,23 @@ static screen_element_t system_status_elements[] = {
 
 static screen_content_t mfd_screens[] = {
     {
-    .title = "Keyboard Status",
-    .elements = kb_status_elements,
-    .element_count = sizeof(kb_status_elements) / sizeof(kb_status_elements[0]),
-    .default_y = 2
-},
+        .title = "Keyboard Status",
+        .elements = kb_status_elements,
+        .element_count = sizeof(kb_status_elements) / sizeof(kb_status_elements[0]),
+        .default_y = 2
+    },
     {
-    .title = "Key Stats",
-    .elements = key_stats_elements,
-    .element_count = sizeof(key_stats_elements) / sizeof(key_stats_elements[0]),
-    .default_y = 2
-},
+        .title = "Key Stats",
+        .elements = key_stats_elements,
+        .element_count = sizeof(key_stats_elements) / sizeof(key_stats_elements[0]),
+        .default_y = 2
+    },
     {
-    .title = "System Status",
-    .elements = system_status_elements,
-    .element_count = sizeof(system_status_elements) / sizeof(system_status_elements[0]),
-    .default_y = 2
-}
+        .title = "System Status",
+        .elements = system_status_elements,
+        .element_count = sizeof(system_status_elements) / sizeof(system_status_elements[0]),
+        .default_y = 2
+    }
 };
 
 mfd_config_t mfd_config = {

@@ -28,7 +28,7 @@ static const char* const screen_pop_status_strings[] = {
     [SCREEN_POP_FAIL_SCREEN_NOT_IN_STACK] = "SCREEN_POP_FAIL_SCREEN_NOT_IN_STACK"
 };
 
-void render_screen_content(screen_content_t* content) {
+static void render_screen_content(screen_content_t* content) {
     if (!content) {
         return;
     }
@@ -100,6 +100,8 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
 
+    clear_display();
+
     // Check if screen is already in stack
     for (int i = 0; i <= screen_stack.top; i++) {
         managed_screen_t current_screen = screen_stack.screens[i];
@@ -121,8 +123,6 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
     }
 
     screen_stack.screens[screen_stack.top] = screen;
-
-    clear_display();
     return SCREEN_PUSH_SUCCESS;
 }
 
@@ -141,6 +141,8 @@ screen_push_status_t push_screen(managed_screen_t screen) {
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
 
+    clear_display();
+
     // Check if screen is already in stack
     for (int i = 0; i <= screen_stack.top; i++) {
         managed_screen_t current_screen = screen_stack.screens[i];
@@ -152,7 +154,6 @@ screen_push_status_t push_screen(managed_screen_t screen) {
     }
 
     screen_stack.screens[++screen_stack.top] = screen;
-    clear_display();
     return SCREEN_PUSH_SUCCESS;
 }
 
@@ -172,9 +173,9 @@ screen_pop_status_t pop_screen(const char* owner) {
         return SCREEN_POP_FAIL_OWNER_MISMATCH;
     }
 
-    --screen_stack.top;
-
     clear_display();
+
+    --screen_stack.top;
     return SCREEN_POP_SUCCESS;
 }
 
@@ -183,16 +184,17 @@ void show_current_screen(void) {
         return;
     }
 
-    managed_screen_t* current = &screen_stack.screens[screen_stack.top];
     uint32_t now = timer_read32();
+    managed_screen_t* current = &screen_stack.screens[screen_stack.top];
 
     if ((now - last_refresh) >= current->refresh_interval_ms) {
+        last_refresh = now;
         if (current->is_custom) {
             current->display.render();
         } else {
             render_screen_content(current->display.content);
         }
-        last_refresh = now;
+        flush_display();
     }
 }
 

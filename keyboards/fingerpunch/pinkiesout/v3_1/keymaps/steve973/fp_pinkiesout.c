@@ -14,17 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
 #include "action_layer.h"
 #include "action_util.h"
+#include "keyboard.h"
 #include "menu/common/menu_core.h"
 #include "quantum.h"
 #include "quantum/action.h"
 #include "debug.h"
-#include "oled/oled_driver.h"
 #include "fp_pinkiesout.h"
 #include "joystick/fp_joystick.h"
 #include "menu/common/menu_core.h"
-#include "display_manager/display_manager.h"
 #include "mfd/mfd.h"
 
 uint32_t keypress_count = 0;
@@ -90,36 +90,30 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+void keyboard_pre_init_user(void) {
+    #ifdef QUANTUM_PAINTER_ENABLE
+        init_display();
+    #endif
+ }
+
 void keyboard_post_init_user() {
     debug_enable = true;
     #ifdef JOYSTICK_ENABLE
-    fp_post_init_joystick();
+        fp_post_init_joystick();
     #endif
-}
+ }
 
 void housekeeping_task_user(void) {
     #ifdef JOYSTICK_ENABLE
-    fp_process_joystick();
+        fp_process_joystick();
+    #endif
+    #ifdef QUANTUM_PAINTER_ENABLE
+        // Update display every 50ms
+        static int32_t display_timer = 0;
+        int32_t now = timer_read32();
+        if (now - display_timer >= 50) {
+            display_timer = now;
+            show_current_screen();
+        }
     #endif
 }
-
-#ifdef OLED_ENABLE
-
-oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    oled_set_brightness(50);
-    mfd_init();
-    return OLED_ROTATION_180;
-}
-
-bool oled_task_user(void) {
-    static int32_t display_timer = 0;
-    int32_t now = timer_read32();
-    // Update display every 50ms
-    if (now - display_timer >= 50) {
-        display_timer = now;
-        show_current_screen();
-    }
-    return false;
-}
-
-#endif // OLED_ENABLE

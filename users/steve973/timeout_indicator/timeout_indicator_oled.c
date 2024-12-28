@@ -1,10 +1,6 @@
 #include <stdint.h>
 #include "oled_driver.h"
-
-#define FIXED_POINT_BITS 8
-
-// 256 = 2^8 for efficient bit-shifting operations
-#define FIXED_POINT_SCALE (1 << FIXED_POINT_BITS)
+#include "timeout_indicator.h"
 
 /**
  * @brief Draw a timeout indicator on the OLED display.
@@ -26,13 +22,14 @@
  * @param timeout_ms Timeout duration in milliseconds.
  */
 void draw_indicator(uint32_t elapsed, uint32_t timeout_ms) {
-    uint8_t height = OLED_DISPLAY_HEIGHT;
+    uint16_t height = OLED_DISPLAY_HEIGHT;
+    uint16_t width = OLED_DISPLAY_WIDTH;
     uint32_t progress = (elapsed << FIXED_POINT_BITS) / timeout_ms;
     if (progress > FIXED_POINT_SCALE) progress = FIXED_POINT_SCALE;
     uint16_t remaining_fixed = FIXED_POINT_SCALE - progress;
-    uint8_t remaining = (height * remaining_fixed) >> 8;
+    uint16_t remaining = (height * remaining_fixed) >> FIXED_POINT_BITS;
 
-    for (uint8_t i = 0; i < height; i++) {
-        oled_write_pixel(OLED_DISPLAY_WIDTH-1, i, i < remaining);
+    for (uint16_t i = 0; i < height; i++) {
+        oled_write_pixel(width - 1, i, i < remaining);
     }
 }

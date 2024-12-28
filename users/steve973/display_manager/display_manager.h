@@ -169,11 +169,11 @@ void show_current_screen(void);
 
 void clear_display(void);
 
-void render_screen_content(screen_content_t* content);
-
-void render_title(const char* title, highlight_type_t highlight);
+void flush_display(void);
 
 extern uint8_t calculate_center_position(const screen_element_t* element);
+
+extern void render_title(const char* title, highlight_type_t highlight);
 
 extern void render_key_value(const key_value_t* kv, uint8_t x, uint8_t y);
 

@@ -47,3 +47,7 @@ enum custom_keycodes {
     RAISE,
     ADJUST
 };
+
+#ifdef QUANTUM_PAINTER_ENABLE
+void init_display(void);
+#endif

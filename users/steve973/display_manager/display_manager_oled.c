@@ -11,6 +11,10 @@ void clear_display(void) {
     oled_clear();
 }
 
+void flush_display() {
+    oled_render_dirty(false);
+}
+
 uint8_t calculate_center_position(const screen_element_t* element) {
     // Calculate string length based on element type
     uint8_t length = 0;

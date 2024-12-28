@@ -100,7 +100,6 @@ void set_menu_mode_lighting(bool enabled) {
 
 /* Public API Implementation */
 bool menu_init(void) {
-    dprintln("Initializing menu system");
     menu_state = (menu_state_t) {
         .current = menu_root,
         .selected_index = 0,
@@ -243,7 +242,6 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
     // Set up context-specific vars
     if (context == NAV_CONTEXT_MENU) {
         if (!menu_state.current) {
-            dprintln("Error: menu_state.current is NULL");
             return;
         }
         item_count = menu_state.current->child_count;
@@ -252,46 +250,35 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
                 item_count, *selected_index);
     } else {
         if (!menu_state.operation.item) {
-            dprintln("Error: operation item is NULL");
             return;
         }
         item_count = menu_state.operation.item->operation.input_count;
         selected_index = &menu_state.selected_index;
-        dprintf("Operation navigation: items=%d, current_index=%d\n",
-                item_count, *selected_index);
     }
 
     switch (keycode) {
         case KC_W:
         case KC_UP:
-            dprintln("Up navigation");
             if (*selected_index > 0) {
                 (*selected_index)--;
-                dprintf("Selected index decreased to %d\n", *selected_index);
             } else {
                 *selected_index = item_count - 1;
-                dprintf("Wrapped to bottom: %d\n", *selected_index);
             }
             break;
 
         case KC_S:
         case KC_DOWN:
-            dprintln("Down navigation");
             if (*selected_index < item_count - 1) {
                 (*selected_index)++;
-                dprintf("Selected index increased to %d\n", *selected_index);
             } else {
                 *selected_index = 0;
-                dprintln("Wrapped to top");
             }
             break;
 
         case KC_D:
         case KC_ENTER:
         case KC_RIGHT:
-            dprintln("Enter/Right navigation");
             if (context == NAV_CONTEXT_MENU) {
-                dprintln("Attempting menu enter");
                 menu_enter();
             }
             break;
@@ -299,22 +286,16 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
         case KC_A:
         case KC_ESC:
         case KC_LEFT:
-            dprintln("Exit/Left navigation");
             if (context == NAV_CONTEXT_MENU) {
-                dprintln("Attempting menu back");
                 if (menu_state.history.depth == 0) {
-                    dprintln("At root menu, exiting");
                     set_menu_active(false);
                 } else {
-                    dprintln("Going back one level");
                     menu_back();
                 }
             }
-            dprintln("Exit/Left navigation complete");
             break;
 
         default:
-            dprintf("Checking shortcuts for keycode: %u\n", keycode);
             if (context == NAV_CONTEXT_MENU &&
                 menu_state.show_shortcuts &&
                 menu_state.current->children) {
@@ -322,7 +303,6 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
                 for (uint8_t i = 0; i < menu_state.current->child_count; i++) {
                     const menu_item_t* item = menu_state.current->children[i];
                     if (item->shortcut && keycode == item->shortcut[0]) {
-                        dprintf("Shortcut found for item %d\n", i);
                         menu_state.selected_index = i;
                         menu_enter();
                     }
@@ -330,18 +310,14 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
             }
             break;
     }
-    dprintln("Navigation handling complete");
 }
 
 /* Input Processing */
 bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
-    dprintf("Menu record: keycode=%u, pressed=%d\n", keycode, record->event.pressed);
     if (!record->event.pressed) return false;
 
     const menu_item_t* current = menu_state.current;
     if (!current) return false;
-
-    dprintf("Current menu item: %s\n", current->label);
 
     nav_context_t context = NAV_CONTEXT_INVALID;
 
@@ -374,12 +350,9 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
         context = NAV_CONTEXT_MENU;
     }
 
-    dprintf("Navigation context: %d\n", context);
-
     handle_navigation(keycode, context);
     update_menu_activity();
 
-    dprintln("Menu record processing complete");
     return false;
 }
 

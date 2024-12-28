@@ -4,6 +4,12 @@
 #include <stdbool.h>
 #include "deferred_exec.h"
 
+// Fixed-point math for efficient progress calculation
+#define FIXED_POINT_BITS 8
+
+// 256 = 2^8 for efficient bit-shifting operations
+#define FIXED_POINT_SCALE (1 << FIXED_POINT_BITS)
+
 #define MAX_TIMEOUT_STACK 8
 #define TIMEOUT_INDICATOR_REFRESH_MS 100
 

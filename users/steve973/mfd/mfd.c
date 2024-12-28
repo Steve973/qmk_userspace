@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "deferred_exec.h"
 #include "display_manager/display_manager.h"
+#include "rgb_matrix.h"
 #include "mfd.h"
 
 /**
@@ -58,7 +59,7 @@ static void mfd_switch_screen(int8_t new_index) {
         .display.content = &mfd_config.screens[new_index],
         .refresh_interval_ms = 200
     };
-    screen_push_status_t push_status = swap_screen(new_screen) == SCREEN_PUSH_SUCCESS;
+    screen_push_status_t push_status = swap_screen(new_screen);
     if (push_status != SCREEN_PUSH_SUCCESS) {
         dprintf("Failed to switch to screen %d\n", new_index);
     }
@@ -77,9 +78,8 @@ static void mfd_switch_screen(int8_t new_index) {
  * @return The next scheduled (timeout) value when the screen will be switched.
  */
 static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
-    if (strcmp(get_current_screen_owner(), MFD_OWNER) == 0) {
-        increment_screen(true);
-    }
+    dprintln("Cycling to next screen");
+    increment_screen(true);
     return mfd_config.cycle_screens ? mfd_config.timeout_ms : 0;
 }
 
@@ -93,8 +93,10 @@ static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
  * @param positive_increment Whether to increment (true) or decrement (false).
  */
 void increment_screen(bool positive_increment) {
-    int8_t new_index = mfd_config.current_index + (positive_increment ? 1 : -1);
-    mfd_switch_screen(check_screen_index(new_index));
+    if (get_screen_stack_size() == 0 || strcmp(get_current_screen_owner(), MFD_OWNER) == 0) {
+        int8_t new_index = mfd_config.current_index + (positive_increment ? 1 : -1);
+        mfd_switch_screen(check_screen_index(new_index));
+    }
 }
 
 /**
@@ -104,9 +106,8 @@ void increment_screen(bool positive_increment) {
  * if one is set, otherwise it will display the logo screen.
  */
 void mfd_init(void) {
-    push_screen(logo_screen);
     if (mfd_config.cycle_screens) {
-        defer_exec(10, cycle_to_next_screen, NULL);
+        defer_exec(100, cycle_to_next_screen, NULL);
     } else {
         mfd_switch_screen(check_screen_index(mfd_config.default_index));
     }
