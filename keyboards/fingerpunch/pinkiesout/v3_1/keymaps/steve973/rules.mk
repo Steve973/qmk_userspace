@@ -71,7 +71,7 @@ ifeq ($(strip $(DISPLAY_MANAGER_ENABLE)), yes)
         SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/fp_pinkiesout_oled.c
     endif
     ifeq ($(strip $(QUANTUM_PAINTER_ENABLE)), yes)
-        SRC += display_manager/fonts/thintel15.qff.c
+        SRC += display_manager/fonts/oled_font.qff.c
         SRC += display_manager/display_manager_qp.c
         SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/fp_pinkiesout_qp.c
     endif

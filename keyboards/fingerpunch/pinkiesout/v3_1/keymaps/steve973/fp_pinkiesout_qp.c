@@ -17,7 +17,7 @@
 #include "quantum/painter/qp.h"
 #include "drivers/painter/sh1106/qp_sh1106.h"
 #include "keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/config.h"
-#include "display_manager/fonts/thintel15.qff.h"
+#include "display_manager/fonts/oled_font.qff.h"
 #include "fp_pinkiesout.h"
 #include "mfd/mfd.h"
 
@@ -25,7 +25,7 @@ painter_device_t display;
 painter_font_handle_t font;
 
 void init_display(void) {
-    font = qp_load_font_mem(&font_thintel15);
+    font = qp_load_font_mem(&oled_font);
     display = qp_sh1106_make_i2c_device(DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_ADDRESS);
     qp_init(display, QP_ROTATION_180);
     #ifdef MFD_ENABLE

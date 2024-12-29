@@ -90,18 +90,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-void keyboard_pre_init_user(void) {
+void keyboard_post_init_user() {
+    debug_enable = true;
     #ifdef QUANTUM_PAINTER_ENABLE
         init_display();
     #endif
- }
-
-void keyboard_post_init_user() {
-    debug_enable = true;
     #ifdef JOYSTICK_ENABLE
         fp_post_init_joystick();
     #endif
- }
+}
 
 void housekeeping_task_user(void) {
     #ifdef JOYSTICK_ENABLE

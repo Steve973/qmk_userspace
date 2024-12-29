@@ -1,9 +1,7 @@
 #include <stdint.h>
+#include "color.h"
 #include "quantum/painter/qp.h"
 #include "timeout_indicator.h"
-
-#define PIXEL_ON 128
-#define PIXEL_OFF 0
 
 extern painter_device_t display;
 
@@ -17,25 +15,33 @@ extern painter_device_t display;
  * indicating the remaining time. When the bar reaches the top, the line of
  * pixels has fully decayed, and the timeout has occurred.
  *
+ * The remaining height calculation follows these steps in a single expression:
+ * 1. Convert elapsed time to fixed-point and cap it at the timeout duration
+ * 2. Calculate progress as a ratio of elapsed to timeout time
+ * 3. Invert the progress to get the remaining ratio (1 - progress)
+ * 4. Scale by display height and convert back from fixed-point
+ *
  * The calculation uses a fixed-point multiplier (FIXED_POINT_SCALE) to avoid
- * floating point math and maintain precision. The progress is calculated as a
- * ratio of the elapsed time to the timeout duration, and then scaled to the
- * height of the display. The use of bit-shifting is fast and efficient for
- * this purpose.
+ * floating point math and maintain precision. The use of bit-shifting is fast
+ * and efficient for this purpose.
  *
  * @param elapsed Time elapsed since the indicator was started.
  * @param timeout_ms Timeout duration in milliseconds.
  */
 void draw_indicator(uint32_t elapsed, uint32_t timeout_ms) {
-    uint16_t height = qp_get_height(display);
-    uint16_t width = qp_get_width(display);
-    uint32_t progress = (elapsed << FIXED_POINT_BITS) / timeout_ms;
-    if (progress > FIXED_POINT_SCALE) progress = FIXED_POINT_SCALE;
-    uint16_t remaining_fixed = FIXED_POINT_SCALE - progress;
-    uint16_t remaining = (height * remaining_fixed) >> FIXED_POINT_BITS;
+    const uint16_t height = qp_get_height(display);
+    const uint16_t rightmost_col = qp_get_width(display) - 1;
+    const uint16_t indicator_end = (
+        height * (
+            FIXED_POINT_SCALE - (
+                MIN(elapsed << FIXED_POINT_BITS, FIXED_POINT_SCALE * timeout_ms)
+                / timeout_ms
+            )
+        )
+    ) >> FIXED_POINT_BITS;
 
-    qp_line(display, width - 1, 0, width - 1, remaining, 0, 0, PIXEL_ON);
-    qp_line(display, width - 1, remaining + 1, width - 1, height, 0, 0, PIXEL_OFF);
+    qp_line(display, rightmost_col, 0, rightmost_col, indicator_end, HSV_WHITE);
+    qp_line(display, rightmost_col, indicator_end + 1, rightmost_col, height, HSV_BLACK);
 
     qp_flush(display);
 }

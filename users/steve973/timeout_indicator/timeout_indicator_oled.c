@@ -12,24 +12,32 @@
  * indicating the remaining time. When the bar reaches the top, the line of
  * pixels has fully decayed, and the timeout has occurred.
  *
+ * The remaining height calculation follows these steps in a single expression:
+ * 1. Convert elapsed time to fixed-point and cap it at the timeout duration
+ * 2. Calculate progress as a ratio of elapsed to timeout time
+ * 3. Invert the progress to get the remaining ratio (1 - progress)
+ * 4. Scale by display height and convert back from fixed-point
+ *
  * The calculation uses a fixed-point multiplier (FIXED_POINT_SCALE) to avoid
- * floating point math and maintain precision. The progress is calculated as a
- * ratio of the elapsed time to the timeout duration, and then scaled to the
- * height of the display. The use of bit-shifting is fast and efficient for
- * this purpose.
+ * floating point math and maintain precision. The use of bit-shifting is fast
+ * and efficient for this purpose.
  *
  * @param elapsed Time elapsed since the indicator was started.
  * @param timeout_ms Timeout duration in milliseconds.
  */
 void draw_indicator(uint32_t elapsed, uint32_t timeout_ms) {
-    uint16_t height = OLED_DISPLAY_HEIGHT;
-    uint16_t width = OLED_DISPLAY_WIDTH;
-    uint32_t progress = (elapsed << FIXED_POINT_BITS) / timeout_ms;
-    if (progress > FIXED_POINT_SCALE) progress = FIXED_POINT_SCALE;
-    uint16_t remaining_fixed = FIXED_POINT_SCALE - progress;
-    uint16_t remaining = (height * remaining_fixed) >> FIXED_POINT_BITS;
+    const uint16_t height = OLED_DISPLAY_HEIGHT;
+    const uint16_t rightmost_col = OLED_DISPLAY_WIDTH - 1;
+    const uint16_t indicator_end = (
+        height * (
+            FIXED_POINT_SCALE - (
+                MIN(elapsed << FIXED_POINT_BITS, FIXED_POINT_SCALE * timeout_ms)
+                / timeout_ms
+            )
+        )
+    ) >> FIXED_POINT_BITS;
 
-    for (uint16_t i = 0; i < height; i++) {
-        oled_write_pixel(width - 1, i, i < remaining);
+    for (uint16_t y = 0; y < height; y++) {
+        oled_write_pixel(rightmost_col, y, y < indicator_end);
     }
 }
