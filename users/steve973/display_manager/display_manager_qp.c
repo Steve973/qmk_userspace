@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "color.h"
 #include "quantum/painter/qp.h"
 #include "display_manager.h"
 
@@ -48,7 +49,7 @@ void render_title(const char* title, highlight_type_t selection) {
 
     switch(selection) {
         case HIGHLIGHT_INVERTED:
-            qp_drawtext_recolor(display, 0, 0, font, title, 0, 0, 0, 0, 0, 255);
+            qp_drawtext_recolor(display, 0, 0, font, title, HSV_BLACK, HSV_WHITE);
             break;
         case HIGHLIGHT_PREFIX:
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "> %s", title);
@@ -73,7 +74,7 @@ void render_list_item(const list_item_t* item, uint8_t x, uint8_t y) {
 
     switch(item->highlight_type) {
         case HIGHLIGHT_INVERTED:
-            qp_drawtext_recolor(display, x, y * font->line_height, font, text, 0, 0, 0, 0, 0, 255);
+            qp_drawtext_recolor(display, x, y * font->line_height, font, text, HSV_BLACK, HSV_WHITE);
             break;
         case HIGHLIGHT_PREFIX:
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "%c %s",

@@ -1,21 +1,13 @@
-// Copyright 2024 QMK -- generated source code only, image retains original copyright
-// SPDX-License-Identifier: GPL-2.0-or-later
-
-// Image's metadata
-// ----------------
-// Width: 128
-// Height: 128
-// Single frame
-
 #include <stdint.h>
-#include "quantum/painter/qp.h"
-#include "qmk-logo-128.qgf.h"
+#include "progmem.h"
+#include "qmk_logo.h"
 
-const uint32_t gfx_qmk_logo_128_length = 1591;
+const uint32_t qmk_logo_128x128_length = QMK_LOGO_128x128_LENGTH;
 
-extern painter_device_t display;
-
-const uint8_t gfx_qmk_logo_128[1591] = {
+/**
+ * @brief QMK logo at 128x128 pixels for rendering by Quantum Painter.
+ */
+const uint8_t qmk_logo_128x128[QMK_LOGO_128x128_LENGTH] PROGMEM = {
     0x00, 0xFF, 0x12, 0x00, 0x00, 0x51, 0x47, 0x46, 0x01, 0x37, 0x06, 0x00, 0x00, 0xC8, 0xF9, 0xFF,
     0xFF, 0x80, 0x00, 0x80, 0x00, 0x01, 0x00, 0x01, 0xFE, 0x04, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00,
     0x02, 0xFD, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0xFF, 0xE8, 0x03, 0x05, 0xFA, 0x07, 0x06, 0x00,
@@ -117,11 +109,3 @@ const uint8_t gfx_qmk_logo_128[1591] = {
     0x80, 0x7F, 0xC0, 0x1F, 0xE0, 0x0F, 0xF8, 0x07, 0xFC, 0x07, 0xFF, 0x88, 0x80, 0x7F, 0xC0, 0x1F,
     0xE0, 0x0F, 0xF8, 0x07, 0xFC, 0x13, 0xFF,
 };
-
-void oled_display_logo(void) {
-    painter_image_handle_t logo = qp_load_image_mem(gfx_qmk_logo_128);
-    if (logo != NULL) {
-        qp_drawimage(display, 0, 0, logo);
-        qp_close_image(logo);
-    }
-}

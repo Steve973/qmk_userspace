@@ -51,13 +51,17 @@ ifeq ($(strip $(DISPLAY_ENABLED)), yes)
 
     ifeq ($(strip $(OLED_ENABLE)), yes)
         OLED_TRANSPORT = i2c
-        SRC += images/oled/fp_logo_128x128.c
+        SRC += images/oled/fingerpunch_logo.c
+        SRC += images/oled/pinkiesout_logo.c
+        SRC += images/oled/qmk_logo.c
         SRC += timeout_indicator/timeout_indicator_oled.c
     endif
 
     ifeq ($(strip $(QUANTUM_PAINTER_ENABLE)), yes)
         QUANTUM_PAINTER_DRIVERS += sh1106_i2c
-        SRC += images/qp/qmk-logo-128.qgf.c
+        SRC += images/qp/fingerpunch_logo.c
+        SRC += images/qp/pinkiesout_logo.c
+        SRC += images/qp/qmk_logo.c
         SRC += timeout_indicator/timeout_indicator_qp.c
     endif
 endif
@@ -82,6 +86,22 @@ ifeq ($(strip $(MFD_ENABLE)), yes)
     OPT_DEFS += -DMFD_ENABLE
     SRC += mfd/mfd.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/fp_kb_screens.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/info/kb_status.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/info/key_stats.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/info/system_status.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/image/fingerpunch_logo_screen.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/image/pinkiesout_logo_screen.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/image/qmk_logo_screen.c
+    ifeq ($(strip $(OLED_ENABLE)), yes)
+        SRC += images/oled/fingerpunch_logo.c
+        SRC += images/oled/pinkiesout_logo.c
+        SRC += images/oled/qmk_logo.c
+    endif
+    ifeq ($(strip $(QUANTUM_PAINTER_ENABLE)), yes)
+        SRC += images/qp/fingerpunch_logo.c
+        SRC += images/qp/pinkiesout_logo.c
+        SRC += images/qp/qmk_logo.c
+    endif
 endif
 
 # Menu sources

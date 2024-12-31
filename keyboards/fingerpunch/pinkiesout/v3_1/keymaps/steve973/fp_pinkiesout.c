@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 #include "action_layer.h"
 #include "action_util.h"
 #include "keyboard.h"
@@ -43,6 +44,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_M:
             if (record->event.pressed && (get_mods() & MOD_MASK_ALT)) {
                 set_menu_active(true);
+                return false;
+            }
+            break;
+        case KC_UP:
+            if (record->event.pressed && (IS_LAYER_ON(_ADJUST))) {
+                change_collection(true);
+                return false;
+            }
+            break;
+        case KC_DOWN:
+            if (record->event.pressed && (IS_LAYER_ON(_ADJUST))) {
+                change_collection(false);
                 return false;
             }
             break;

@@ -72,7 +72,7 @@ typedef struct {
     union {
         key_value_t key_value;
         list_item_t list_item;
-        image_t image;
+        const image_t* image;
         void (*custom_render)(void);  // For full custom rendering
     } content;
 } screen_element_t;

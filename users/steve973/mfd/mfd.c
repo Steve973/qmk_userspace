@@ -4,7 +4,6 @@
 #include "debug.h"
 #include "deferred_exec.h"
 #include "display_manager/display_manager.h"
-#include "rgb_matrix.h"
 #include "mfd.h"
 
 /**
@@ -14,15 +13,13 @@
 
 #define MFD_OWNER "mfd"
 
-/**
- * @brief Managed screen for the logo displayed as the first MFD screen.
- */
-static const managed_screen_t logo_screen = {
-    .owner = MFD_OWNER,
-    .display.render = &oled_display_logo,
-    .refresh_interval_ms = 0,
-    .is_custom = true
-};
+static mfd_config_t* get_active_config(void) {
+    if (mfd_state.active_collection >= mfd_state.collection_count) {
+        dprintf("Invalid active collection: %d\n", mfd_state.active_collection);
+        return NULL;
+    }
+    return mfd_state.collections[mfd_state.active_collection];
+}
 
 /**
  * @brief Checks the index to see if it is within bounds, wrapping if necessary.
@@ -34,9 +31,11 @@ static const managed_screen_t logo_screen = {
  * @param index The index to check.
  */
 static uint8_t check_screen_index(int8_t index) {
-    return index >= mfd_config.screen_count ? LOGO_SCREEN_INDEX :     // Wrap around to logo
-           index < LOGO_SCREEN_INDEX ? mfd_config.screen_count - 1 :  // Wrap around to last screen
-           index;                                                     // Provided index in bounds
+    mfd_config_t* config = get_active_config();
+    if (!config) return -1;
+    return index >= config->screen_count ? 0 :
+           index < 0 ? config->screen_count - 1 :
+           index;
 }
 
 /**
@@ -49,14 +48,15 @@ static uint8_t check_screen_index(int8_t index) {
  * @param new_index The index of the screen to switch to.
  */
 static void mfd_switch_screen(int8_t new_index) {
-    if (new_index >= mfd_config.screen_count || new_index < LOGO_SCREEN_INDEX) {
+    mfd_config_t* config = get_active_config();
+    if (!config || new_index >= config->screen_count || new_index < 0) {
         return;
     }
-    mfd_config.current_index = new_index;
-    managed_screen_t new_screen = new_index == LOGO_SCREEN_INDEX ? logo_screen : (managed_screen_t) {
+    config->current_index = new_index;
+    managed_screen_t new_screen = (managed_screen_t) {
         .owner = MFD_OWNER,
         .is_custom = false,
-        .display.content = &mfd_config.screens[new_index],
+        .display.content = config->screens[new_index],
         .refresh_interval_ms = 200
     };
     screen_push_status_t push_status = swap_screen(new_screen);
@@ -78,9 +78,11 @@ static void mfd_switch_screen(int8_t new_index) {
  * @return The next scheduled (timeout) value when the screen will be switched.
  */
 static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
+    mfd_config_t* config = get_active_config();
+    if (!config) return 0;
     dprintln("Cycling to next screen");
     increment_screen(true);
-    return mfd_config.cycle_screens ? mfd_config.timeout_ms : 0;
+    return config->cycle_screens ? config->timeout_ms : 0;
 }
 
 /**
@@ -93,9 +95,20 @@ static uint32_t cycle_to_next_screen(uint32_t trigger_time, void* cb_arg) {
  * @param positive_increment Whether to increment (true) or decrement (false).
  */
 void increment_screen(bool positive_increment) {
+    mfd_config_t* config = get_active_config();
+    if (!config) return;
     if (get_screen_stack_size() == 0 || strcmp(get_current_screen_owner(), MFD_OWNER) == 0) {
-        int8_t new_index = mfd_config.current_index + (positive_increment ? 1 : -1);
+        int8_t new_index = config->current_index + (positive_increment ? 1 : -1);
         mfd_switch_screen(check_screen_index(new_index));
+    }
+}
+
+void change_collection(bool positive_increment) {
+    if (mfd_state.collection_count > 1) {
+        mfd_state.active_collection += positive_increment ? 1 : -1;
+        mfd_state.active_collection = mfd_state.active_collection % mfd_state.collection_count;
+        dprintf("Changed mfd screen collection to %d\n", mfd_state.active_collection);
+        mfd_switch_screen(0);
     }
 }
 
@@ -106,9 +119,11 @@ void increment_screen(bool positive_increment) {
  * if one is set, otherwise it will display the logo screen.
  */
 void mfd_init(void) {
-    if (mfd_config.cycle_screens) {
-        defer_exec(100, cycle_to_next_screen, NULL);
+    mfd_config_t* config = get_active_config();
+    if (!config) return;
+    if (config->cycle_screens) {
+        defer_exec(10, cycle_to_next_screen, NULL);
     } else {
-        mfd_switch_screen(check_screen_index(mfd_config.default_index));
+        mfd_switch_screen(check_screen_index(config->default_index));
     }
 }

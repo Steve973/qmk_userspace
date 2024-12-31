@@ -18,8 +18,8 @@
 #include "drivers/painter/sh1106/qp_sh1106.h"
 #include "keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/config.h"
 #include "display_manager/fonts/oled_font.qff.h"
-#include "fp_pinkiesout.h"
 #include "mfd/mfd.h"
+#include "fp_pinkiesout.h"
 
 painter_device_t display;
 painter_font_handle_t font;

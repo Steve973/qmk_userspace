@@ -14,27 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "timer.h"
-#include "oled/oled_driver.h"
-#include "display_manager/display_manager.h"
-#include "mfd/mfd.h"
-#include "fp_pinkiesout.h"
+#pragma once
 
-oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    oled_set_brightness(50);
-    #ifdef MFD_ENABLE
-        mfd_init();
-    #endif
-    return OLED_ROTATION_180;
-}
+#include <stdint.h>
 
-bool oled_task_user(void) {
-    static int32_t display_timer = 0;
-    int32_t now = timer_read32();
-    // Update display every 50ms
-    if (now - display_timer >= 50) {
-        display_timer = now;
-        show_current_screen();
-    }
-    return false;
-}
+#define FP_PO_V31_LOGO_128x50_LENGTH 896
+#define PINKIESOUT_LOGO_128x128_LENGTH 2048
+
+extern const uint32_t fp_po_v31_logo_128x50_length;
+extern const uint32_t pinkiesout_logo_128x128_length;
+
+extern const char fp_po_v31_logo_128x50[FP_PO_V31_LOGO_128x50_LENGTH];
+extern const char pinkiesout_logo_128x128[PINKIESOUT_LOGO_128x128_LENGTH];

@@ -30,8 +30,10 @@ static const char* const screen_pop_status_strings[] = {
 
 static void render_screen_content(screen_content_t* content) {
     if (!content) {
+        dprintf("render_screen_content: content is NULL\n");
         return;
     }
+    dprintf("Rendering screen with %d elements\n", content->element_count);
 
     int8_t highlight_index = -1;
     if (content->get_highlight_index) {
@@ -65,8 +67,11 @@ static void render_screen_content(screen_content_t* content) {
             x = calculate_center_position(element);
         }
 
+        dprintf("Element %d type: %d, x: %d, y: %d\n", i, element->type, element->x, element->y);
+        dprintf("Element %d type: %d\n", i, element->type);
         switch (element->type) {
             case CONTENT_TYPE_KEY_VALUE:
+            dprintf("Key/Value - label: %s\n", element->content.key_value.label);
                 render_key_value(&element->content.key_value, x, y);
                 break;
 
@@ -75,7 +80,7 @@ static void render_screen_content(screen_content_t* content) {
                 break;
 
             case CONTENT_TYPE_IMAGE:
-                render_image(&element->content.image, x, y);
+                render_image(element->content.image, x, y);
                 break;
 
             case CONTENT_TYPE_CUSTOM:
@@ -100,8 +105,6 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
 
-    clear_display();
-
     // Check if screen is already in stack
     for (int i = 0; i <= screen_stack.top; i++) {
         managed_screen_t current_screen = screen_stack.screens[i];
@@ -122,6 +125,8 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
         }
     }
 
+    clear_display();
+
     screen_stack.screens[screen_stack.top] = screen;
     return SCREEN_PUSH_SUCCESS;
 }
@@ -141,8 +146,6 @@ screen_push_status_t push_screen(managed_screen_t screen) {
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
 
-    clear_display();
-
     // Check if screen is already in stack
     for (int i = 0; i <= screen_stack.top; i++) {
         managed_screen_t current_screen = screen_stack.screens[i];
@@ -152,6 +155,8 @@ screen_push_status_t push_screen(managed_screen_t screen) {
             return SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK;
         }
     }
+
+    clear_display();
 
     screen_stack.screens[++screen_stack.top] = screen;
     return SCREEN_PUSH_SUCCESS;
