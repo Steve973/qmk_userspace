@@ -79,7 +79,7 @@ static screen_element_t kb_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 2,
+        .y = 0,
         .content.key_value = {
             .label = "Layer",
             .value.get_value = get_layer_status,
@@ -89,7 +89,7 @@ static screen_element_t kb_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 3,
+        .y = 0,
         .content.key_value = {
             .label = "Joystick",
             .value.get_value = get_joystick_status,
@@ -99,7 +99,7 @@ static screen_element_t kb_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 4,
+        .y = 0,
         .content.key_value = {
             .label = "Lock",
             .value.get_value = get_led_status,
@@ -109,7 +109,7 @@ static screen_element_t kb_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 5,
+        .y = 0,
         .content.key_value = {
             .label = "Mods",
             .value.get_value = get_mod_status,

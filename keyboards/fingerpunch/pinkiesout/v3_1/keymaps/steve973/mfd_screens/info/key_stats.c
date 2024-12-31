@@ -86,7 +86,7 @@ static screen_element_t key_stats_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 2,
+        .y = 0,
         .content.key_value = {
             .label = "KPS",
             .value.get_value = get_kps,
@@ -96,7 +96,7 @@ static screen_element_t key_stats_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 3,
+        .y = 0,
         .content.key_value = {
             .label = "KPM",
             .value.get_value = get_kpm,
@@ -106,7 +106,7 @@ static screen_element_t key_stats_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 4,
+        .y = 0,
         .content.key_value = {
             .label = "WPM",
             .value.get_value = get_wpm_status,
@@ -116,7 +116,7 @@ static screen_element_t key_stats_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 5,
+        .y = 0,
         .content.key_value = {
             .label = "Peak WPM",
             .value.get_value = get_peak_wpm_status,
@@ -126,7 +126,7 @@ static screen_element_t key_stats_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 6,
+        .y = 0,
         .content.key_value = {
             .label = "Total",
             .value.get_value = get_keycount_status,

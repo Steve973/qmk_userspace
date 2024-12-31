@@ -73,7 +73,7 @@ static screen_element_t system_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 2,
+        .y = 0,
         .content.key_value = {
             .label = "RGB Hue",
             .value.get_value = get_rgb_hue_status,
@@ -83,7 +83,7 @@ static screen_element_t system_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 3,
+        .y = 0,
         .content.key_value = {
             .label = "RGB Sat",
             .value.get_value = get_rgb_sat_status,
@@ -93,7 +93,7 @@ static screen_element_t system_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 4,
+        .y = 0,
         .content.key_value = {
             .label = "RGB Val",
             .value.get_value = get_rgb_val_status,
@@ -103,7 +103,7 @@ static screen_element_t system_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 5,
+        .y = 0,
         .content.key_value = {
             .label = "RGB Mode",
             .value.get_value = get_rgb_mode_status,
@@ -113,7 +113,7 @@ static screen_element_t system_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
         .x = 0,
-        .y = 6,
+        .y = 0,
         .content.key_value = {
             .label = "Uptime",
             .value.get_value = get_uptime,

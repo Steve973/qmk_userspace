@@ -167,16 +167,75 @@ uint8_t get_screen_stack_size(void);
  */
 void show_current_screen(void);
 
+/**
+ * @brief Clears the display.
+ */
 void clear_display(void);
 
+/**
+ * @brief Flushes the display to show any changes.
+ */
 void flush_display(void);
 
-extern uint8_t calculate_center_position(const screen_element_t* element);
+/**
+ * @brief Calculates the starting x-position to center text on the display.
+ */
+uint16_t calculate_center_position(const screen_element_t* element);
 
-extern void render_title(const char* title, highlight_type_t highlight);
+/**
+ * @brief Calculate the starting x-position to center text on the display.
+ */
+extern uint16_t calculate_center_xpos(const char* text);
 
+/**
+ * @brief Calculate the starting y-position for a group of text lines to center text on the display.
+ */
+extern uint16_t calculate_center_ypos(uint8_t num_lines, bool with_title);
+
+/**
+ * @brief Render text with an underline.
+ *
+ * @param text The text to render.
+ * @param x The x-coordinate of the text.
+ * @param y The y-coordinate of the text.
+ * @param gap The number of pixels between the text and the underline.
+ * @param thickness The thickness of the underline in pixels.
+ * @param invert Whether to invert the text color.
+ */
+extern void render_underlined_text_adv(const char* text, uint8_t x, uint8_t y, uint8_t gap, uint8_t thickness, bool invert);
+
+/**
+ * @brief Render text with a 1-pixel underline.
+ *
+ * @param text The text to render.
+ * @param x The x-coordinate of the text.
+ * @param y The y-coordinate of the text.
+ */
+extern void render_underlined_text(const char* text, uint8_t x, uint8_t y);
+
+/**
+ * @brief Render a key/value pair like "key: value".
+ *
+ * @param kv The key/value pair to render.
+ * @param x The x-coordinate of the key/value pair.
+ * @param y The y-coordinate of the key/value pair.
+ */
 extern void render_key_value(const key_value_t* kv, uint8_t x, uint8_t y);
 
+/**
+ * @brief Render a list item.
+ *
+ * @param item The list item to render.
+ * @param x The x-coordinate of the list item.
+ * @param y The y-coordinate of the list item.
+ */
 extern void render_list_item(const list_item_t* item, uint8_t x, uint8_t y);
 
+/**
+ * @brief Render an image.
+ *
+ * @param image The image to render.
+ * @param x The x-coordinate of the image.
+ * @param y The y-coordinate of the image.
+ */
 extern void render_image(const image_t* image, uint8_t x, uint8_t y);
