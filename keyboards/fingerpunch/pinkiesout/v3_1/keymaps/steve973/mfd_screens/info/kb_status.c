@@ -24,6 +24,9 @@
 #include "joystick/fp_joystick.h"
 #include "mfd/mfd.h"
 
+/**
+ * Returns the current layer status as a string.
+ */
 static const char* get_layer_status(void) {
     static char buffer[32];
     snprintf(buffer, sizeof(buffer), "%s",
@@ -35,6 +38,9 @@ static const char* get_layer_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current joystick status as a string.
+ */
 static const char* get_joystick_status(void) {
     static char buffer[32];
     snprintf(buffer, sizeof(buffer), "%s",
@@ -46,6 +52,9 @@ static const char* get_joystick_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current lock status as a string.
+ */
 static const char* get_led_status(void) {
     static char buffer[32];
     led_t led_state = host_keyboard_led_state();
@@ -60,6 +69,9 @@ static const char* get_led_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current mods status as a string.
+ */
 static const char* get_mod_status(void) {
     static char buffer[32];
     uint8_t mods = get_mods();
@@ -75,6 +87,9 @@ static const char* get_mod_status(void) {
     return buffer;
 }
 
+/**
+ * Represents the keyboard status screen elements.
+ */
 static screen_element_t kb_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
@@ -118,6 +133,9 @@ static screen_element_t kb_status_elements[] = {
     }
 };
 
+/**
+ * Represents the keyboard status screen.
+ */
 const screen_content_t kb_status_screen = {
     .title = "Keyboard Status",
     .elements = kb_status_elements,

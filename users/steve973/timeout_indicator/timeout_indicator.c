@@ -5,10 +5,29 @@
 
 static uint8_t next_id = 1;
 
+/**
+ * @brief State of the timeout indicator to track multiple timeouts.
+ */
 static timeout_indicator_state_t state = { .stack_depth = 0 };
 
+/**
+ * @brief Draws the timeout indicator to represent remaining time.
+ *
+ * @param elapsed The elapsed time in milliseconds.
+ * @param timeout_ms The total time for the timeout in milliseconds.
+ */
 extern void draw_indicator(uint32_t elapsed, uint32_t timeout_ms);
 
+/**
+ * @brief Checks if a timeout has occurred and calls the callback if so.
+ *
+ * This function is called periodically to check if a timeout has occurred.
+ * If a timeout has occurred, the callback is called and the timeout is removed.
+ *
+ * @param trigger_time The time the function was triggered.
+ * @param cb_arg Unused argument.
+ * @return The time until the next check.
+ */
 static uint32_t check_timeout(uint32_t trigger_time, void* cb_arg) {
     if (state.stack_depth == 0) return 0;
 
@@ -26,6 +45,13 @@ static uint32_t check_timeout(uint32_t trigger_time, void* cb_arg) {
     return TIMEOUT_INDICATOR_REFRESH_MS;
 }
 
+/**
+ * @brief Creates a new timeout indicator.
+ *
+ * @param timeout_ms The duration of the timeout in milliseconds.
+ * @param callback The callback to call when the timeout occurs.
+ * @return The id of the created timeout.
+ */
 uint8_t timeout_indicator_create(uint32_t timeout_ms, void (*callback)(void)) {
     if (state.stack_depth >= MAX_TIMEOUT_STACK) return 0;
 
@@ -52,6 +78,11 @@ uint8_t timeout_indicator_create(uint32_t timeout_ms, void (*callback)(void)) {
     return id;
 }
 
+/**
+ * @brief Cancels a timeout indicator.
+ *
+ * @param timeout_id The id of the timeout to cancel.
+ */
 void timeout_indicator_cancel(uint8_t timeout_id) {
     if (state.stack_depth == 0) return;
 
@@ -76,6 +107,11 @@ void timeout_indicator_cancel(uint8_t timeout_id) {
     }
 }
 
+/**
+ * @brief Resets a timeout indicator to its initial state.
+ *
+ * @param timeout_id The id of the timeout to reset.
+ */
 void timeout_indicator_reset(uint8_t timeout_id) {
     if (state.stack_depth == 0) return;
 

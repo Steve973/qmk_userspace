@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**
+ * @brief The status of pushing a screen to the stack.
+ */
 typedef enum {
     SCREEN_PUSH_SUCCESS,
     SCREEN_PUSH_FAIL_STACK_FULL,
@@ -12,6 +15,9 @@ typedef enum {
     SCREEN_PUSH_FAIL_SCREEN_ALREADY_IN_STACK,
 } screen_push_status_t;
 
+/**
+ * @brief The status of popping a screen from the stack.
+ */
 typedef enum {
     SCREEN_POP_SUCCESS,
     SCREEN_POP_FAIL_STACK_EMPTY,
@@ -20,6 +26,9 @@ typedef enum {
     SCREEN_POP_FAIL_SCREEN_NOT_IN_STACK,
 } screen_pop_status_t;
 
+/**
+ * @brief The type of content to display on the screen.
+ */
 typedef enum {
     CONTENT_TYPE_KEY_VALUE,
     CONTENT_TYPE_LIST,
@@ -27,6 +36,9 @@ typedef enum {
     CONTENT_TYPE_CUSTOM
 } content_type_t;
 
+/**
+ * @brief Types of lighlighting for items on the screen.
+ */
 typedef enum {
     HIGHLIGHT_NONE,
     HIGHLIGHT_INVERTED,    // Invert the text
@@ -34,6 +46,9 @@ typedef enum {
     HIGHLIGHT_GLYPH        // Use a custom glyph/icon
 } highlight_type_t;
 
+/**
+ * @brief Represents a key/value pair to display on the screen.
+ */
 typedef struct {
     const char* label;
     union {
@@ -44,6 +59,9 @@ typedef struct {
     const uint8_t* icon;  // Optional icon/glyph
 } key_value_t;
 
+/**
+ * @brief Represents an item in a list to display on the screen.
+ */
 typedef struct {
     union {
         const char* static_text;
@@ -58,6 +76,9 @@ typedef struct {
     const uint8_t* icon;          // Optional icon beside text
 } list_item_t;
 
+/**
+ * @brief Represents an image to display on the screen.
+ */
 typedef struct {
     const uint8_t* data;
     uint8_t width;
@@ -65,6 +86,9 @@ typedef struct {
     bool invert;                  // Whether to invert the image
 } image_t;
 
+/**
+ * @brief Represents an element to display on the screen.
+ */
 typedef struct {
     content_type_t type;
     uint8_t x;
@@ -77,6 +101,9 @@ typedef struct {
     } content;
 } screen_element_t;
 
+/**
+ * @brief Represents the content of a screen.
+ */
 typedef struct {
     const char* title;                    // Optional screen title
     highlight_type_t title_highlight;     // In case we need to highlight the title
@@ -89,7 +116,9 @@ typedef struct {
     int8_t (*get_highlight_index)(void);  // Function pointer to get current highlight
 } screen_content_t;
 
-// This would replace the LVGL union in your managed_screen_t:
+/**
+ * @brief Represents a screen that can be managed by the display manager.
+ */
 typedef struct {
     const char* owner;
     bool is_custom;

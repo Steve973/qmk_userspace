@@ -18,6 +18,9 @@
 #include "quantum/rgb_matrix/rgb_matrix.h"
 #include "mfd/mfd.h"
 
+/**
+ * Returns the current RGB hue status as a string.
+ */
 static const char* get_rgb_hue_status(void) {
     static char buffer[32];
     if (rgb_matrix_is_enabled()) {
@@ -29,6 +32,9 @@ static const char* get_rgb_hue_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current RGB saturation status as a string.
+ */
 static const char* get_rgb_sat_status(void) {
     static char buffer[32];
     if (rgb_matrix_is_enabled()) {
@@ -40,6 +46,9 @@ static const char* get_rgb_sat_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current RGB value status as a string.
+ */
 static const char* get_rgb_val_status(void) {
     static char buffer[32];
     if (rgb_matrix_is_enabled()) {
@@ -51,6 +60,9 @@ static const char* get_rgb_val_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current RGB mode status as a string.
+ */
 static const char* get_rgb_mode_status(void) {
     static char buffer[32];
     if (rgb_matrix_is_enabled()) {
@@ -62,6 +74,9 @@ static const char* get_rgb_mode_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the current uptime status as a string.
+ */
 static const char* get_uptime(void) {
     static char buffer[32];
     uint32_t elapsed = timer_read32() / 1000;
@@ -69,6 +84,9 @@ static const char* get_uptime(void) {
     return buffer;
 }
 
+/**
+ * Represents the system status screen elements.
+ */
 static screen_element_t system_status_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
@@ -122,6 +140,9 @@ static screen_element_t system_status_elements[] = {
     }
 };
 
+/**
+ * Represents the system status screen.
+ */
 const screen_content_t system_status_screen = {
     .title = "System Status",
     .elements = system_status_elements,

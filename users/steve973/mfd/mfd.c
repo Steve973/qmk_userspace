@@ -13,6 +13,9 @@
 
 #define MFD_OWNER "mfd"
 
+/**
+ * @brief Returns the active collection configuration.
+ */
 static mfd_config_t* get_active_config(void) {
     if (mfd_state.active_collection >= mfd_state.collection_count) {
         dprintf("Invalid active collection: %d\n", mfd_state.active_collection);
@@ -103,6 +106,15 @@ void increment_screen(bool positive_increment) {
     }
 }
 
+/**
+ * @brief Changes the active collection to the next or previous collection.
+ *
+ * This function changes the active collection to the next or previous collection
+ * in the list of collections. If the active collection is already at the end of
+ * the list, it will wrap around to the beginning.
+ *
+ * @param positive_increment Whether to increment (true) or decrement (false).
+ */
 void change_collection(bool positive_increment) {
     if (mfd_state.collection_count > 1) {
         mfd_state.active_collection += positive_increment ? 1 : -1;

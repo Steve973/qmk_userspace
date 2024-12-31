@@ -24,19 +24,27 @@ extern const screen_content_t fp_logo_screen;
 extern const screen_content_t po_logo_screen;
 extern const screen_content_t qmk_logo_screen;
 
-// Collection setup
+/**
+ * Array of informational screens to display on the MFD.
+ */
 static const screen_content_t* info_screens[] = {
     &kb_status_screen,
     &key_stats_screen,
     &system_status_screen
 };
 
+/**
+ * Array of image screens to display on the MFD.
+ */
 static const screen_content_t* image_screens[] = {
     &fp_logo_screen,
     &po_logo_screen,
     &qmk_logo_screen
 };
 
+/**
+ * Configuration for the informational screens collection.
+ */
 static mfd_config_t info_screen_config = {
     .screens = (screen_content_t**)info_screens,
     .screen_count = sizeof(info_screens) / sizeof(info_screens[0]),
@@ -46,6 +54,9 @@ static mfd_config_t info_screen_config = {
     .cycle_screens = true
 };
 
+/**
+ * Configuration for the image screens collection.
+ */
 static mfd_config_t image_screen_config = {
     .screens = (screen_content_t**)image_screens,
     .screen_count = sizeof(image_screens) / sizeof(image_screens[0]),
@@ -55,11 +66,17 @@ static mfd_config_t image_screen_config = {
     .cycle_screens = true
 };
 
+/**
+ * Array of screen collections.
+ */
 static mfd_config_t* collection_array[] = {
     &info_screen_config,
     &image_screen_config
 };
 
+/**
+ * Global state for screen collections.
+ */
 mfd_state_t mfd_state = {
     .collections = collection_array,
     .collection_count = 2,

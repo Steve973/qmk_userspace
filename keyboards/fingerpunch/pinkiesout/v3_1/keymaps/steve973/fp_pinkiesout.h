@@ -48,6 +48,9 @@ enum custom_keycodes {
     ADJUST
 };
 
+/**
+ * Function declaration for Quantum Painter display initialiazation, if enabled.
+ */
 #ifdef QUANTUM_PAINTER_ENABLE
 void init_display(void);
 #endif

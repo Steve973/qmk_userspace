@@ -20,6 +20,13 @@
 #include "mfd/mfd.h"
 #include "fp_pinkiesout.h"
 
+/**
+ * @brief OLED Display initialization for user customization.
+ *
+ * This function sets the OLED brightness, and initializes the MFD if enabled.
+ *
+ * @param rotation The desired rotation of the display.
+ */
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     oled_set_brightness(50);
     #ifdef MFD_ENABLE
@@ -28,6 +35,13 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     return OLED_ROTATION_180;
 }
 
+/**
+ * @brief OLED Display task for user customization.
+ *
+ * This function limits display updates to every 50ms, and invokes the display
+ * manager's show_current_screen function to update the displayed screen
+ * content.
+ */
 bool oled_task_user(void) {
     static int32_t display_timer = 0;
     int32_t now = timer_read32();

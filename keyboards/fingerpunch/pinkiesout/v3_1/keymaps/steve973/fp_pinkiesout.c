@@ -31,6 +31,29 @@
 uint32_t keypress_count = 0;
 uint8_t peak_wpm = 0;
 
+/**
+ * Handles Pinkies Out key record processing.  If the menu is active, the
+ * record is passed to the menu system.  Otherwise, the record is processed
+ * here, if any of the relevant keys or key combinations are pressed.
+ *
+ * The following key combinations are handled:
+ * - Alt + M:      Activates the menu system
+ * - Alt + Up:     Changes to the next MFD screen collection
+ * - Alt + Down:   Changes to the previous MFD screen collection
+ * - Alt + Left:   Decrements the current MFD screen to the previous screen
+ * - Alt + Right:  Increments the current MFD screen to the next screen
+ * - Lower:        Activates the Lower layer
+ * - Raise:        Activates the Raise layer
+ * - Adjust:       Activates the Adjust layer
+ *
+ * Any other key will be processed by the keyboard firmware.
+ *
+ * Note that all keypresses are tallied through this function.
+ *
+ * @param keycode The keycode that was pressed
+ * @param record The key record
+ * @return false if the key was handled and processing should stop, false otherwise
+ */
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
         keypress_count++;
@@ -103,6 +126,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
+/**
+ * Handles Pinkies Out keyboard user initialization.  This function is used to
+ * initialize the display and joystick, if enabled.
+ */
 void keyboard_post_init_user() {
     debug_enable = true;
     #ifdef QUANTUM_PAINTER_ENABLE
@@ -113,6 +140,11 @@ void keyboard_post_init_user() {
     #endif
 }
 
+/**
+ * Handles Pinkies Out keyboard user housekeeping tasks.  This function is used
+ * to process joystick input, if enabled, and to update the display, if the
+ * quantum painter is enabled.  In this case, he display is updated every 50ms.
+ */
 void housekeeping_task_user(void) {
     #ifdef JOYSTICK_ENABLE
         fp_process_joystick();

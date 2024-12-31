@@ -20,6 +20,9 @@
 #include "fp_pinkiesout.h"
 #include "mfd/mfd.h"
 
+/**
+ * Returns the current words per minute (WPM) status as a string.
+ */
 static const char* get_wpm_status(void) {
     static char buffer[32];
     uint8_t current = get_current_wpm();
@@ -27,6 +30,9 @@ static const char* get_wpm_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the peak words per minute (WPM) status as a string.
+ */
 static const char* get_peak_wpm_status(void) {
     static char buffer[32];
     static uint8_t peak_wpm = 0;
@@ -38,12 +44,18 @@ static const char* get_peak_wpm_status(void) {
     return buffer;
 }
 
+/**
+ * Returns the key count status as a string.
+ */
 static const char* get_keycount_status(void) {
     static char buffer[32];
     snprintf(buffer, sizeof(buffer), "%lu   ", keypress_count);
     return buffer;
 }
 
+/**
+ * Returns the keys per second (KPS) status as a string.
+ */
 static const char* get_kps(void) {
     static char buffer[32];
     static uint32_t last_time = 0;
@@ -62,6 +74,9 @@ static const char* get_kps(void) {
     return buffer;
 }
 
+/**
+ * Returns the keys per minute (KPM) status as a string.
+ */
 static const char* get_kpm(void) {
     static char buffer[32];
     static uint32_t last_time = 0;
@@ -82,6 +97,9 @@ static const char* get_kpm(void) {
     return buffer;
 }
 
+/**
+ * Represents the key stats screen elements.
+ */
 static screen_element_t key_stats_elements[] = {
     {
         .type = CONTENT_TYPE_KEY_VALUE,
@@ -135,6 +153,9 @@ static screen_element_t key_stats_elements[] = {
     }
 };
 
+/**
+ * Represents the key stats screen.
+ */
 const screen_content_t key_stats_screen = {
     .title = "Key Stats",
     .elements = key_stats_elements,

@@ -126,6 +126,9 @@ int16_t get_stick_up_angle(void) {
     return joystick_config.up_orientation * 90;
 }
 
+/**
+ * @brief Initializes the user EEPROM datablock with default values.
+ */
 void eeconfig_init_user_datablock(void) {
     fp_kb_config_user = (fp_config_user_t) {
         .js_config = (fp_joystick_config_t) {
@@ -151,6 +154,14 @@ void eeconfig_init_user_datablock(void) {
     fp_kb_config_save();
 }
 
+/**
+ * @brief Loads the user EEPROM datablock into the joystick configuration.
+ *
+ * This function reads the user EEPROM datablock and checks if the configuration
+ * version and size match the expected values.
+ *
+ * @return True if the configuration is valid, false otherwise.
+ */
 bool fp_kb_config_load(void) {
     eeconfig_read_user_datablock(&fp_kb_config_user);
     dprintf("Config version: %d, wanted version: %d, match: %d\n", fp_kb_config_user.config_version, FP_USER_CONFIG_VERSION, fp_kb_config_user.config_version == FP_USER_CONFIG_VERSION);
@@ -159,6 +170,9 @@ bool fp_kb_config_load(void) {
             (sizeof(fp_kb_config_user) == EECONFIG_USER_DATA_SIZE));
 }
 
+/**
+ * @brief Saves the joystick configuration to the user EEPROM datablock.
+ */
 void fp_kb_config_save(void) {
     eeconfig_update_user_datablock(&fp_kb_config_user);
 }

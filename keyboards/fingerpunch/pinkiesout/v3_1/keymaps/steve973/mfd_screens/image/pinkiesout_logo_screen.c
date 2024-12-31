@@ -1,5 +1,6 @@
 #include "mfd/mfd.h"
 
+// Load the image data for the OLED driver
 #ifdef OLED_DRIVER_ENABLE
 #define PINKIESOUT_LOGO_SCREEN_ENABLED
 #include "images/oled/pinkiesout_logo.h"
@@ -9,6 +10,7 @@ static const image_t pinkiesout_logo = {
     .height = 128,
     .invert = false
 };
+// Load the image data for the Quantum Painter
 #elif defined(QUANTUM_PAINTER_ENABLE)
 #define PINKIESOUT_LOGO_SCREEN_ENABLED
 #include "images/qp/pinkiesout_logo.h"
@@ -20,6 +22,7 @@ static const image_t pinkiesout_logo = {
 };
 #endif
 
+// If the logo screen is enabled, define the screen elements
 #ifdef PINKIESOUT_LOGO_SCREEN_ENABLED
 static screen_element_t po_logo_elements[] = {
     {
@@ -30,6 +33,7 @@ static screen_element_t po_logo_elements[] = {
     }
 };
 
+// Define the screen content
 const screen_content_t po_logo_screen = {
     .title = NULL,
     .elements = po_logo_elements,

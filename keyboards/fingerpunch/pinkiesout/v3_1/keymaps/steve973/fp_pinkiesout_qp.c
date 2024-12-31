@@ -24,6 +24,14 @@
 painter_device_t display;
 painter_font_handle_t font;
 
+/**
+ * @brief Initialize the Quantum Painter display.
+ *
+ * This function sets up the font for the quantum painter display, and initializes
+ * the display device for the SH1106 driver with the appropriate resolution and
+ * hardware address, and sets the display rotation to 180 degrees.  If the MFD
+ * feature is enabled, the MFD is initialized directly after display init.
+ */
 void init_display(void) {
     font = qp_load_font_mem(&oled_font);
     display = qp_sh1106_make_i2c_device(DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_ADDRESS);
