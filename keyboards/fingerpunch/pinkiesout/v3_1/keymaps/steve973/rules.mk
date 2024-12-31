@@ -85,7 +85,7 @@ endif
 ifeq ($(strip $(MFD_ENABLE)), yes)
     OPT_DEFS += -DMFD_ENABLE
     SRC += mfd/mfd.c
-    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/fp_kb_screens.c
+    SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/fp_kb_screens.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/info/kb_status.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/info/key_stats.c
     SRC += keyboards/fingerpunch/pinkiesout/v3_1/keymaps/steve973/mfd_screens/info/system_status.c
