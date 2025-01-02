@@ -1,21 +1,23 @@
+#include "debug.h"
 #include "precondition.h"
 #include "../../../common/menu_operation.h"
 #include "../../../display/menu_display.h"
+#include "../../../actions/state_mgmt/state_manager.h"
 
-void precondition_init(operation_context_t operation_state) {
+phase_result_t precondition_init(operation_context_t operation_state) {
     operation_state.current_phase = OPERATION_PHASE_PRECONDITION;
     // Precondition is first in the chain, so prev_result should be NONE
     if (operation_state.result != OPERATION_RESULT_NONE) {
         operation_state.result = OPERATION_RESULT_ERROR;
-        operation_state.phase_state = PHASE_STATE_CANCELLED;
-        return;
+        dprintln("Precondition init failed from previous result?! -- cancelling");
+        return PHASE_RESULT_CANCEL;
     }
 
     const struct precondition_config* config = operation_state.item->operation.precondition;
     if (!config || !config->handler) {
         operation_state.result = OPERATION_RESULT_ERROR;
-        operation_state.phase_state = PHASE_STATE_CANCELLED;
-        return;
+        dprintln("Precondition init failed from no config! -- cancelling");
+        return PHASE_RESULT_CANCEL;
     }
 
     // Set up the display configuration for precondition phase
@@ -27,26 +29,32 @@ void precondition_init(operation_context_t operation_state) {
         .refresh_interval_ms = 0
     });
 
-    operation_state.phase_state = PHASE_STATE_AWAITING_INPUT;
+    dprintln("Precondition init passed -- advancing");
+    return PHASE_RESULT_ADVANCE;
 }
 
-void precondition_input(operation_context_t operation_state) {
-    operation_state.phase_state = PHASE_STATE_PROCESSING;
+phase_result_t precondition_input(operation_context_t operation_state) {
+    dprintln("Precondition input passed -- advancing");
+    return PHASE_RESULT_ADVANCE;
 }
 
-void precondition_processing(operation_context_t operation_state) {
+phase_result_t precondition_processing(operation_context_t operation_state) {
     // Call the handler with its args
     const struct precondition_config* config = operation_state.item->operation.precondition;
     operation_result_t (*handler_func)(void*) = (operation_result_t (*)(void*))config->handler;
     operation_state.result = handler_func(config->args);
     pop_screen(MENU_OWNER);
     if (operation_state.result != OPERATION_RESULT_SUCCESS) {
-        operation_state.phase_state = PHASE_STATE_CANCELLED;
+        dprintln("Precondition processing failed -- cancelling");
+        return PHASE_RESULT_CANCEL;
     } else {
-        operation_state.phase_state = PHASE_STATE_COMPLETE;
+        dprintln("Precondition processing passed -- advancing");
+        return PHASE_RESULT_ADVANCE;
     }
 }
 
-void precondition_complete(operation_context_t operation_state) {
+phase_result_t precondition_complete(operation_context_t operation_state) {
     // Clean up, if necessary
+    dprintln("Precondition complete passed -- completing");
+    return PHASE_RESULT_COMPLETE;
 }

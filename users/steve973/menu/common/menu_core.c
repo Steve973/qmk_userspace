@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "display_manager/display_manager.h"
 #include "keycodes.h"
+#include "src/fp.h"
 #include "timer.h"
 #include "src/fp_rgb_common.h"
 #include "timeout_indicator/timeout_indicator.h"
@@ -46,11 +47,7 @@ typedef struct menu_state {
     uint8_t selected_index;          // Currently selected item
     uint32_t last_activity;          // For timeout tracking
     uint32_t timeout_ms;             // Configurable timeout
-
-    // Display state
     bool show_shortcuts;             // Show keyboard shortcuts
-
-    // Menu history
     menu_history_t history;          // Navigation history
 
     // Operation state
@@ -93,20 +90,39 @@ void set_menu_mode_lighting(bool enabled) {
         fp_rgb_set_hsv_and_mode(HSV_BLUE, RGB_MATRIX_BREATHING);
     } else {
         // Restore original keyboard LED colors
-        rgb_matrix_reload_from_eeprom();
+        fp_rgb_set_hsv_and_mode(
+            fp_config.rgb_hue,
+            fp_config.rgb_sat,
+            fp_config.rgb_val,
+            fp_config.rgb_mode
+        );
     }
     #endif
 }
 
-/* Public API Implementation */
+/**
+ * @brief Initialize the menu to a clean state for entering or exiting menu mode.
+ *
+ * This function is called when entering or exiting menu mode to ensure that the
+ * menu state is clean and ready for use.  It will pop any existing menu screens
+ * from the display stack and reset the menu state to the root menu with an empty
+ * history stack.
+ */
 bool menu_init(void) {
+    while (strcmp(get_current_screen_owner(), MENU_OWNER) == 0) {
+        pop_screen(MENU_OWNER);
+    }
+
     menu_state = (menu_state_t) {
         .current = menu_root,
         .selected_index = 0,
         .last_activity = timer_read32(),
         .timeout_ms = DEFAULT_TIMEOUT_MS,
         .show_shortcuts = false,
-        .history = { .depth = 0 },
+        .history = {
+            .items = { NULL },
+            .depth = 0
+        },
         .operation = {
             .in_progress = false,
             .item = NULL,
@@ -118,58 +134,105 @@ bool menu_init(void) {
     return true;
 }
 
+/**
+ * @brief Returns the current menu state -- true if the menu is active, false otherwise.
+ */
 bool is_menu_active(void) {
     return menu_active;
 }
 
+/**
+ * @brief Exits menu mode.
+ */
 void menu_exit(void) {
     set_menu_active(false);
 }
 
+/**
+ * @brief Returns the current selected/highlighted menu item index.
+ */
 int8_t get_current_highlight_index(void) {
     return menu_state.selected_index;
 }
 
+/**
+ * @brief Returns to the menu "home" screen.
+ *
+ * This function ensures that the menu is in a clean state and then displays the
+ * home screen of the menu. This is the entry point for the menu system, and it
+ * is often called when entering menu mode or when the user presses the "home"
+ * button to return to the top-level menu.
+ */
+void menu_home(void) {
+    menu_init();
+
+    // Create and push new submenu screen
+    screen_content_t* screen = create_menu_screen(menu_state.current);
+
+    // Provide the function to get the current highlight index
+    // for the display manager to use for showing the selected
+    // item in the menu
+    screen->get_highlight_index = &get_current_highlight_index;
+
+    push_screen((managed_screen_t){
+        .owner = MENU_OWNER,
+        .is_custom = false,
+        .display.content = screen,
+        .refresh_interval_ms = 0
+    });
+}
+
+/**
+ * @brief Sets the menu active or inactive.
+ *
+ * This function is used to toggle the menu mode on or off.  When the menu is
+ * activated by passing "true" to the function, the menu home screen is displayed,
+ * and the keyboard is locked into menu mode until the menu is deactivated,
+ * either by calling this function with "false" or by timing out.  When the menu
+ * is deactivated, the menu state is cleaned up, the keyboard is cleared, and
+ * menu mode is exited, returning the keyboard to normal operation.
+ *
+ * Keyboard lighting reflects the menu mode state, with a blue "breathing"
+ * animation indicating that the keyboard is in menu mode.
+ *
+ * @param active True to activate the menu, false to deactivate it.
+ */
 void set_menu_active(bool active) {
     if (active && !menu_active) {
         menu_active = true;
-        menu_init();
-
-        // Create and push new submenu screen
-        screen_content_t* screen = create_menu_screen(menu_state.current);
-
-        // Provide the function to get the current highlight index
-        // for the display manager to use for showing the selected
-        // item in the menu
-        screen->get_highlight_index = &get_current_highlight_index;
-
-        push_screen((managed_screen_t){
-            .owner = MENU_OWNER,
-            .is_custom = false,
-            .display.content = screen,
-            .refresh_interval_ms = 0
-        });
-
-        update_menu_activity();
+        menu_home();
         menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &menu_exit);
     } else if (!active && menu_active) {
         timeout_indicator_cancel(menu_timeout_token);
-        // Remove the main menu screen
-        pop_screen(MENU_OWNER);
         clear_keyboard();
+        menu_init();
         menu_active = false;
-        clear_display();
     }
     set_menu_mode_lighting(active);
 }
 
+/**
+ * @brief Enter a submenu, or execute an operation, depending on the menu selection.
+ *
+ * This function is called when the user selects a menu item to either enter a
+ * submenu or execute an operation.  If the selected item is a submenu, the
+ * function will navigate into the submenu and display the submenu screen.  If
+ * the selected item is an operation, the function will execute the operation.
+ *
+ * @return True if the operation was successful, false otherwise.
+ */
 bool menu_enter(void) {
     const menu_item_t* current = menu_state.current;
-    if (!current) return false;
+    if (!current || !current->children || menu_state.selected_index >= current->child_count) {
+        return false;
+    }
+
+    // Get the selected item
+    const menu_item_t* selected = current->children[menu_state.selected_index];
 
     // If we're at a submenu, navigate into it
-    if (current->type == MENU_TYPE_SUBMENU) {
-        if (!current->children || current->child_count == 0) {
+    if (selected->type == MENU_TYPE_SUBMENU) {
+        if (!selected->children || selected->child_count == 0) {
             return false;  // Empty submenu
         }
 
@@ -179,7 +242,7 @@ bool menu_enter(void) {
         }
 
         // Create and push new submenu screen
-        screen_content_t* screen = create_menu_screen(current->children[menu_state.selected_index]);
+        screen_content_t* screen = create_menu_screen(selected);
 
         // Provide the function to get the current highlight index
         // for the display manager to use for showing the selected
@@ -194,20 +257,30 @@ bool menu_enter(void) {
         });
 
         // Move to first item in submenu
-        menu_state.current = current->children[menu_state.selected_index];
+        menu_state.current = selected;
         menu_state.selected_index = 0;
         return true;
     }
 
     // If it's an action, execute it
-    else if (current->type == MENU_TYPE_ACTION && current->operation.action) {
-        execute_operation(current);
+    else if (selected->type == MENU_TYPE_ACTION && selected->operation.action) {
+        menu_state.current = selected;
+        execute_operation(selected);
         return true;
     }
 
     return false;
 }
 
+/**
+ * @brief Returns to the previous menu screen or exits the menu if at the top level.
+ *
+ * This function is called when the user presses the "back" button to return to
+ * the previous menu screen.  If the current screen is the top-level menu, the
+ * function will exit the menu mode and return the keyboard to normal operation.
+ *
+ * @return True if the operation was successful, false otherwise.
+ */
 bool menu_back(void) {
     if (menu_state.operation.in_progress) {
         if (menu_state.operation.input_value) {
@@ -233,9 +306,16 @@ bool menu_back(void) {
     return false;
 }
 
+/**
+ * @brief Handle menu navigation based on the keycode and navigation context.
+ *
+ * This function is called when a key is pressed to navigate the menu.  The function
+ * will handle the navigation based on the keycode and the current navigation context.
+ *
+ * @param keycode The keycode of the key that was pressed.
+ * @param context The current navigation context.
+ */
 static void handle_navigation(uint16_t keycode, nav_context_t context) {
-    dprintf("Navigation: keycode=%u, context=%d\n", keycode, context);
-
     uint8_t item_count;
     uint8_t* selected_index;
 
@@ -312,7 +392,21 @@ static void handle_navigation(uint16_t keycode, nav_context_t context) {
     }
 }
 
-/* Input Processing */
+/**
+ * @brief Process a key press event for the menu system.
+ *
+ * This function is called when a key is pressed to process the key press event
+ * for the menu system.  The function determines the navigation context, and
+ * this means that, if an operation is in progress, it determines the current
+ * operation phase, or it sets the phase to indicate that the key was pressed
+ * as part of normal menu navigation.  At this point, this function calls the
+ * function to process naviagation with the key and context, then updates the
+ * menu activity to reset the timeout indicator.
+ *
+ * @param keycode The keycode of the key that was pressed.
+ * @param record The key record for the key press event.
+ * @return True to further process the keypress, false otherwise.
+ */
 bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
     if (!record->event.pressed) return false;
 
@@ -356,7 +450,19 @@ bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
     return false;
 }
 
-/* Memory Management */
+/**
+ * @brief Create a new menu item.
+ *
+ * This function creates a new menu item with the specified label, short label,
+ * and type.  The function allocates memory for the new menu item and initializes
+ * the item with the specified values.  The function returns a pointer to the
+ * newly created menu item.
+ *
+ * @param label The label of the menu item.
+ * @param short_label The short label of the menu item.
+ * @param type The type of the menu item.
+ * @return A pointer to the newly created menu item.
+ */
 menu_item_t* menu_create_item(const char* label, const char* short_label, menu_type_t type) {
     menu_item_t* item = malloc(sizeof(menu_item_t));
     if (!item) return NULL;
@@ -368,6 +474,19 @@ menu_item_t* menu_create_item(const char* label, const char* short_label, menu_t
     return item;
 }
 
+
+/**
+ * @brief Add a child menu item to a parent menu item.
+ *
+ * This function adds a child menu item to a parent menu item.  The function
+ * reallocates memory for the parent menu item's children array to add the
+ * new child menu item.  The function returns true if the child menu item was
+ * successfully added, or false otherwise.
+ *
+ * @param parent The parent menu item to which to add the child menu item.
+ * @param child The child menu item to add to the parent menu item.
+ * @return True if the child menu item was successfully added, false otherwise.
+ */
 bool menu_add_child(menu_item_t* parent, const menu_item_t* child) {
     if (!parent || !child) return false;
 
@@ -383,6 +502,15 @@ bool menu_add_child(menu_item_t* parent, const menu_item_t* child) {
     return true;
 }
 
+/**
+ * @brief Free a menu item and its children.
+ *
+ * This function frees a menu item and its children recursively.  The function
+ * frees the memory for the menu item and its children, including the operation
+ * data and condition rules.
+ *
+ * @param item The menu item to free.
+ */
 void menu_free_item(const menu_item_t* item) {
     if (!item) return;
 

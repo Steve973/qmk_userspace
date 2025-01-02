@@ -1,26 +1,29 @@
 #include <stdlib.h>
+#include "debug.h"
 #include "input.h"
 #include "../../../common/menu_core.h"
 #include "../../../common/menu_operation.h"
 #include "../../../display/menu_display.h"
+#include "../../../actions/state_mgmt/state_manager.h"
 
 static int8_t input_idx = -1;
 
-void input_init(operation_context_t operation_state) {
+phase_result_t input_init(operation_context_t operation_state) {
     operation_state.current_phase = OPERATION_PHASE_INPUT;
-    if (operation_state.result != OPERATION_RESULT_SUCCESS &&
+    if (input_idx == -1 &&
+        operation_state.result != OPERATION_RESULT_SUCCESS &&
         operation_state.result != OPERATION_RESULT_NONE) {
         operation_state.result = OPERATION_RESULT_ERROR;
-        operation_state.phase_state = PHASE_STATE_CANCELLED;
-        return;
+        dprintln("Input init failed from previous result?! -- cancelling");
+        return PHASE_RESULT_CANCEL;
     }
 
     const struct input_config* config = operation_state.item->operation.inputs;
     uint8_t input_count = operation_state.item->operation.input_count;
     if (!config || input_count == 0) {
         operation_state.result = OPERATION_RESULT_ERROR;
-        operation_state.phase_state = PHASE_STATE_CANCELLED;
-        return;
+        dprintln("Input init failed from no config! -- cancelling");
+        return PHASE_RESULT_CANCEL;
     }
 
     if (input_idx == -1) {
@@ -28,8 +31,8 @@ void input_init(operation_context_t operation_state) {
         operation_state.phase_data = malloc(sizeof(void*) * input_count);
         if (!operation_state.phase_data) {
             operation_state.result = OPERATION_RESULT_ERROR;
-            operation_state.phase_state = PHASE_STATE_CANCELLED;
-            return;
+            dprintln("Input init failed from malloc! -- cancelling");
+            return PHASE_RESULT_CANCEL;
         }
     }
 
@@ -53,25 +56,27 @@ void input_init(operation_context_t operation_state) {
             operation_result_t result = handler_func(current_input->data.custom.data);
             if (result != OPERATION_RESULT_SUCCESS) {
                 operation_state.result = result;
-                operation_state.phase_state = PHASE_STATE_CANCELLED;
-                return;
+                dprintln("Input init failed from custom handler! -- cancelling");
+                return PHASE_RESULT_CANCEL;
             }
             break;
 
         default:
-            operation_state.phase_state = PHASE_STATE_CANCELLED;
             operation_state.result = OPERATION_RESULT_ERROR;
-            return;
+            dprintln("Input init failed from unknown input type! -- cancelling");
+            return PHASE_RESULT_CANCEL;
     }
 
-    operation_state.phase_state = PHASE_STATE_AWAITING_INPUT;
+    return PHASE_RESULT_ADVANCE;
 }
 
-void input_input(operation_context_t operation_state) {
+phase_result_t input_input(operation_context_t operation_state) {
     if (operation_state.result == OPERATION_RESULT_CANCELLED || operation_state.result == OPERATION_RESULT_ERROR) {
-        operation_state.phase_state = PHASE_STATE_CANCELLED;
+        dprintln("Input input failed from previous result?! -- cancelling");
+        return PHASE_RESULT_CANCEL;
     } else if (operation_state.choice_made < 0) {
-        return;
+        dprintln("Input input failed from no choice! -- cancelling");
+        return PHASE_RESULT_CANCEL;
     } else {
         // Store choice in already-allocated phase_data
         const struct input_config* current_input =
@@ -100,20 +105,28 @@ void input_input(operation_context_t operation_state) {
 
         if (input_idx + 1 < operation_state.item->operation.input_count) {
             input_idx++;
-            operation_state.phase_state = PHASE_STATE_INIT;
+            // Need to get the next input value, so return to the init phase
+            // with the incremented index for then next input
+            set_phase_state(&operation_state, PHASE_STATE_INIT);
+            dprintln("Input input needs to get next input value -- continuing");
+            return PHASE_RESULT_CONTINUE;
         } else {
-            operation_state.phase_state = PHASE_STATE_PROCESSING;
+            dprintln("Input input passed -- advancing");
+            return PHASE_RESULT_ADVANCE;
         }
     }
 }
 
-void input_processing(operation_context_t operation_state) {
+phase_result_t input_processing(operation_context_t operation_state) {
     // All inputs have been stored already
     // Just need to set success/error state
     operation_state.result = OPERATION_RESULT_SUCCESS;
-    operation_state.phase_state = PHASE_STATE_COMPLETE;
+    dprintln("Input processing passed -- advancing");
+    return PHASE_RESULT_ADVANCE;
 }
 
-void input_complete(operation_context_t operation_state) {
+phase_result_t input_complete(operation_context_t operation_state) {
     input_idx = -1;
+    dprintln("Input complete passed -- completing");
+    return PHASE_RESULT_COMPLETE;
 }

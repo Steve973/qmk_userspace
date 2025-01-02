@@ -164,7 +164,6 @@ static void render_screen_content(screen_content_t* content) {
 
         switch (element->type) {
             case CONTENT_TYPE_KEY_VALUE:
-            dprintf("Key/Value - label: %s\n", element->content.key_value.label);
                 render_key_value(&element->content.key_value, x, y);
                 break;
 

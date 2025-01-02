@@ -118,6 +118,7 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     SRC += menu/actions/user/joystick/joystick_actions.c
     SRC += menu/actions/user/rgb/rgb_actions.c
     SRC += menu/actions/user/system/system_actions.c
+    SRC += menu/actions/state_mgmt/state_manager.c
 
     MENU_TOOL := $(QMK_USERSPACE)/users/steve973/menu/generator/generate_menu.py
     MENU_JSON := $(QMK_USERSPACE)/users/steve973/menu/config/menu_config.json
