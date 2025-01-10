@@ -4,109 +4,448 @@
 #include "rgb_matrix/rgb_matrix.h"
 #include "info_config.h"
 #include "version.h"
+#include "display_manager/display_manager.h"
+#include "keycode_config.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
-#define MAX_INFO_STR 32
-
-char device_info_strs[7][MAX_INFO_STR];
-char firmware_info_strs[4][MAX_INFO_STR];
-char feature_info_strs[5][MAX_INFO_STR];
-char memory_info_strs[3][MAX_INFO_STR];
 
 /**
- * @brief Extracts a substring from input until the first occurrence of the
- * delimiter.
- *
- * This function copies the input string to the output buffer until the first
- * occurrence of the delimiter, or until the output buffer is full. If the
- * delimiter is found, it is replaced with a null terminator to signify the end
- * of the string.  If the output buffer is full, the string is null-terminated.
- *
- * @param output The output buffer to write to.
- * @param output_size The size of the output buffer.
- * @param input The input string to extract from.
- * @param delimiter The delimiter to stop at.
+ * Returns device manufacturer information.
  */
-static void extract_until_delimiter(char* output, size_t output_size, const char* input, char delimiter) {
-    strncpy(output, input, output_size - 1);
-    output[output_size - 1] = '\0';
-    char* delim_pos = strchr(output, delimiter);
+static const char* get_manufacturer_info(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", MANUFACTURER);
+    return buffer;
+}
+
+/**
+ * Returns keyboard product information.
+ */
+static const char* get_product_info(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", PRODUCT);
+    return buffer;
+}
+
+/**
+ * Returns MCU information.
+ */
+static const char* get_mcu_info(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", TOSTRING(QMK_MCU));
+    return buffer;
+}
+
+/**
+ * Returns VID/PID information.
+ */
+static const char* get_vid_pid_info(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%04X/%04X", VENDOR_ID, PRODUCT_ID);
+    return buffer;
+}
+
+/**
+ * Returns device version information.
+ */
+static const char* get_device_version(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%04X", DEVICE_VER);
+    return buffer;
+}
+
+/**
+ * Returns matrix size information.
+ */
+static const char* get_matrix_size(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%dx%d", MATRIX_ROWS, MATRIX_COLS);
+    return buffer;
+}
+
+/**
+ * Returns diode direction information.
+ */
+static const char* get_diode_direction(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", TOSTRING(DIODE_DIRECTION));
+    return buffer;
+}
+
+/**
+ * Returns firmware version information.
+ */
+static const char* get_firmware_version(void) {
+    static char buffer[32];
+    char version[28];
+    strncpy(version, QMK_VERSION, sizeof(version) - 1);
+    version[sizeof(version) - 1] = '\0';
+    char* delim_pos = strchr(version, '-');
     if (delim_pos) *delim_pos = '\0';
+    snprintf(buffer, sizeof(buffer), "%s", version);
+    return buffer;
 }
 
-void init_device_info_strings(void) {
-    uint8_t info_str_idx = 0;
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "Mfr: %s", MANUFACTURER);
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "KB: %s", PRODUCT);
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "MCU: %s", TOSTRING(QMK_MCU));
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "VID/PID: %04X/%04X", VENDOR_ID, PRODUCT_ID);
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "Device Ver: %04X", DEVICE_VER);
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "Matrix: %dx%d", MATRIX_ROWS, MATRIX_COLS);
-    snprintf(device_info_strs[info_str_idx++], MAX_INFO_STR, "Diode Dir: %s", TOSTRING(DIODE_DIRECTION));
-}
-
-// Firmware Info
-void init_firmware_info_strings(void) {
-    uint8_t info_str_idx = 0;
-
-    char version[MAX_INFO_STR - 4];
-    extract_until_delimiter(version, sizeof(version), QMK_VERSION, '-');
-
+/**
+ * Returns git hash information.
+ */
+static const char* get_git_hash(void) {
+    static char buffer[32];
     char git_hash[14];
-    extract_until_delimiter(git_hash, sizeof(git_hash), QMK_GIT_HASH, '*');
-
-    snprintf(firmware_info_strs[info_str_idx++], MAX_INFO_STR, "FW: %s", version);
-    snprintf(firmware_info_strs[info_str_idx++], MAX_INFO_STR, "Git: %s", git_hash);
-    snprintf(firmware_info_strs[info_str_idx++], MAX_INFO_STR, "Built: %s", QMK_BUILDDATE);
+    strncpy(git_hash, QMK_GIT_HASH, sizeof(git_hash) - 1);
+    git_hash[sizeof(git_hash) - 1] = '\0';
+    char* delim_pos = strchr(git_hash, '*');
+    if (delim_pos) *delim_pos = '\0';
+    snprintf(buffer, sizeof(buffer), "%s", git_hash);
+    return buffer;
 }
 
-// Feature Status
-void init_feature_info_strings(void) {
-    uint8_t info_str_idx = 0;
+/**
+ * Returns build date information.
+ */
+static const char* get_build_date(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", QMK_BUILDDATE);
+    return buffer;
+}
 
-    char nkro_str[9] = "Disabled";
+/**
+ * Returns RGB matrix status.
+ */
+static const char* get_rgb_status(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", rgb_matrix_is_enabled() ? "On" : "Off");
+    return buffer;
+}
+
+/**
+ * Returns audio status.
+ */
+static const char* get_audio_status(void) {
+    static char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%s", audio_is_on() ? "On" : "Off");
+    return buffer;
+}
+
+/**
+ * Returns NKRO status.
+ */
+static const char* get_nkro_status(void) {
+    static char buffer[32];
     #ifdef NKRO_ENABLE
-    snprintf(nkro_str, sizeof(nkro_str), "%s", keymap_config.nkro ? "On" : "Off");
+    snprintf(buffer, sizeof(buffer), "%s", keymap_config.nkro ? "On" : "Off");
+    #else
+    snprintf(buffer, sizeof(buffer), "Disabled");
     #endif
+    return buffer;
+}
 
-    char mousekey_str[9] = "Disabled";
+/**
+ * Returns mousekey status.
+ */
+static const char* get_mousekey_status(void) {
+    static char buffer[32];
     #ifdef MOUSEKEY_ENABLE
-    strcpy(mousekey_str, "Enabled");
+    snprintf(buffer, sizeof(buffer), "Enabled");
+    #else
+    snprintf(buffer, sizeof(buffer), "Disabled");
     #endif
+    return buffer;
+}
 
-    char extrakey_str[9] = "Disabled";
+/**
+ * Returns extrakey status.
+ */
+static const char* get_extrakey_status(void) {
+    static char buffer[32];
     #ifdef EXTRAKEY_ENABLE
-    strcpy(extrakey_str, "Enabled");
+    snprintf(buffer, sizeof(buffer), "Enabled");
+    #else
+    snprintf(buffer, sizeof(buffer), "Disabled");
     #endif
-
-    snprintf(feature_info_strs[info_str_idx++], MAX_INFO_STR, "RGB: %s", rgb_matrix_is_enabled() ? "On" : "Off");
-    snprintf(feature_info_strs[info_str_idx++], MAX_INFO_STR, "Audio: %s", audio_is_on() ? "On" : "Off");
-    snprintf(feature_info_strs[info_str_idx++], MAX_INFO_STR, "NKRO: %s", nkro_str);
-    snprintf(feature_info_strs[info_str_idx++], MAX_INFO_STR, "MouseKey: %s", mousekey_str);
-    snprintf(feature_info_strs[info_str_idx++], MAX_INFO_STR, "ExtraKey: %s", extrakey_str);
+    return buffer;
 }
 
-// Memory Info
-void init_memory_info_strings(void) {
-    uint8_t info_str_idx = 0;
-
-    char bootloader_str[9] = "Unknown";
+/**
+ * Returns bootloader size information.
+ */
+static const char* get_bootloader_size(void) {
+    static char buffer[32];
     #ifdef BOOTLOADER_SIZE
-    snprintf(bootloader_str, sizeof(bootloader_str), "%dKB", BOOTLOADER_SIZE / 1024);
+    snprintf(buffer, sizeof(buffer), "%dKB", BOOTLOADER_SIZE / 1024);
+    #else
+    snprintf(buffer, sizeof(buffer), "Unknown");
     #endif
-
-    char firmware_str[9] = "Unknown";
-    #ifdef FIRMWARE_SIZE
-    snprintf(firmware_str, sizeof(firmware_str), "%dKB", FIRMWARE_SIZE / 1024);
-    #endif
-
-    char eeprom_str[9] = "Unknown";
-    #ifdef EEPROM_SIZE
-    snprintf(eeprom_str, sizeof(eeprom_str), "%dB", EEPROM_SIZE);
-    #endif
-
-    snprintf(memory_info_strs[info_str_idx++], MAX_INFO_STR, "Boot Size: %s", bootloader_str);
-    snprintf(memory_info_strs[info_str_idx++], MAX_INFO_STR, "FW Size: %s", firmware_str);
-    snprintf(memory_info_strs[info_str_idx++], MAX_INFO_STR, "EEPROM: %s", eeprom_str);
+    return buffer;
 }
+
+/**
+ * Returns firmware size information.
+ */
+static const char* get_firmware_size(void) {
+    static char buffer[32];
+    #ifdef FIRMWARE_SIZE
+    snprintf(buffer, sizeof(buffer), "%dKB", FIRMWARE_SIZE / 1024);
+    #else
+    snprintf(buffer, sizeof(buffer), "Unknown");
+    #endif
+    return buffer;
+}
+
+/**
+ * Returns EEPROM size information.
+ */
+static const char* get_eeprom_size(void) {
+    static char buffer[32];
+    #ifdef EEPROM_SIZE
+    snprintf(buffer, sizeof(buffer), "%dB", EEPROM_SIZE);
+    #else
+    snprintf(buffer, sizeof(buffer), "Unknown");
+    #endif
+    return buffer;
+}
+
+/**
+ * Represents the device information screen elements.
+ */
+static screen_element_t device_info_elements[] = {
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Manufacturer",
+            .value.get_value = get_manufacturer_info,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Keyboard",
+            .value.get_value = get_product_info,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "MCU",
+            .value.get_value = get_mcu_info,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "VID/PID",
+            .value.get_value = get_vid_pid_info,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Device Ver",
+            .value.get_value = get_device_version,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Matrix",
+            .value.get_value = get_matrix_size,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Diode Dir",
+            .value.get_value = get_diode_direction,
+            .is_dynamic = false
+        }
+    }
+};
+
+/**
+ * Represents the firmware information screen elements.
+ */
+static screen_element_t firmware_info_elements[] = {
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Version",
+            .value.get_value = get_firmware_version,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Git Hash",
+            .value.get_value = get_git_hash,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Built",
+            .value.get_value = get_build_date,
+            .is_dynamic = false
+        }
+    }
+};
+
+/**
+ * Represents the feature status screen elements.
+ */
+static screen_element_t feature_info_elements[] = {
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "RGB Matrix",
+            .value.get_value = get_rgb_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Audio",
+            .value.get_value = get_audio_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "NKRO",
+            .value.get_value = get_nkro_status,
+            .is_dynamic = true
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Mouse Keys",
+            .value.get_value = get_mousekey_status,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Extra Keys",
+            .value.get_value = get_extrakey_status,
+            .is_dynamic = false
+        }
+    }
+};
+
+/**
+ * Represents the memory information screen elements.
+ */
+static screen_element_t memory_info_elements[] = {
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "Boot Size",
+            .value.get_value = get_bootloader_size,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "FW Size",
+            .value.get_value = get_firmware_size,
+            .is_dynamic = false
+        }
+    },
+    {
+        .type = CONTENT_TYPE_KEY_VALUE,
+        .x = 0,
+        .y = 0,
+        .content.key_value = {
+            .label = "EEPROM",
+            .value.get_value = get_eeprom_size,
+            .is_dynamic = false
+        }
+    }
+};
+
+/**
+ * Represents the device information screen.
+ */
+const screen_content_t device_info_screen = {
+    .title = "Device Info",
+    .elements = device_info_elements,
+    .element_count = sizeof(device_info_elements) / sizeof(device_info_elements[0]),
+    .default_y = 2
+};
+
+/**
+ * Represents the firmware information screen.
+ */
+const screen_content_t firmware_info_screen = {
+    .title = "Firmware Info",
+    .elements = firmware_info_elements,
+    .element_count = sizeof(firmware_info_elements) / sizeof(firmware_info_elements[0]),
+    .default_y = 2
+};
+
+/**
+ * Represents the feature status screen.
+ */
+const screen_content_t feature_info_screen = {
+    .title = "Features",
+    .elements = feature_info_elements,
+    .element_count = sizeof(feature_info_elements) / sizeof(feature_info_elements[0]),
+    .default_y = 2
+};
+
+/**
+ * Represents the memory information screen.
+ */
+const screen_content_t memory_info_screen = {
+    .title = "Memory Info",
+    .elements = memory_info_elements,
+    .element_count = sizeof(memory_info_elements) / sizeof(memory_info_elements[0]),
+    .default_y = 2
+};
