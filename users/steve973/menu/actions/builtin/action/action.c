@@ -4,8 +4,9 @@
 #include "../../../display/menu_display.h"
 #include "../../../core/operation/operation_types.h"
 #include "../../../core/structure/menu_item.h"
-#include "display_manager/display_manager.h"
 #include "../../../core/generated/menu_action_lookup.h"
+
+#define ACTION_OWNER "action"
 
 static action_func_t find_action_function(const char* action_name) {
     for (size_t i = 0; i < action_lookup_table_size; i++) {
@@ -52,17 +53,6 @@ phase_result_t action_input(operation_context_t* operation_state) {
 
 phase_result_t action_processing(operation_context_t* operation_state) {
     dprintf("Processing action for: %s\r\n", operation_state->item->label);
-    // Show what we're doing
-    screen_content_t* screen = create_operation_screen(operation_state->item, OPERATION_PHASE_ACTION);
-    if (screen) {
-        dprintf("Pushing screen for action: %s -- %s with elements: %d\r\n", operation_state->item->label, screen->title, screen->element_count);
-        push_screen((managed_screen_t){
-            .owner = MENU_OWNER,
-            .is_custom = false,
-            .display.content = screen,
-            .refresh_interval_ms = 0
-        });
-    }
 
     // Look up and execute the action
     dprintf("Executing action: %s\r\n", operation_state->item->label);
@@ -73,17 +63,18 @@ phase_result_t action_processing(operation_context_t* operation_state) {
     if (!action_function) {
         dprintln("Action function not found -- cancelling");
         operation_state->result = OPERATION_RESULT_ERROR;
-        if (screen) {
-            pop_screen(MENU_OWNER);
-        }
         return PHASE_RESULT_CANCEL;
     }
+
+    // Show what we're doing
+    screen_push_status_t push_status = create_operation_screen(operation_state->item, OPERATION_PHASE_ACTION, ACTION_OWNER);
+    bool screen = push_status == SCREEN_PUSH_SUCCESS;
 
     operation_result_t result = action_function(operation_state->result, operation_state->phase_data);
     operation_state->result = result;
 
     if (screen) {
-        pop_screen(MENU_OWNER);
+        remove_menu_screen(ACTION_OWNER);
     }
 
     if (result == OPERATION_RESULT_CANCELLED || result == OPERATION_RESULT_ERROR) {

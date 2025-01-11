@@ -7,10 +7,10 @@
 #define MENU_OWNER "menu"
 
 // Main function to create screen content from a menu item
-screen_content_t* create_menu_screen(const menu_item_t* menu_item);
+screen_push_status_t create_menu_screen(const menu_item_t* menu_item, int8_t (*get_highlight_index)(void), const char* owner);
 
 // For operation phases
-screen_content_t* create_operation_screen(const menu_item_t* item, operation_phase_t phase);
+screen_push_status_t create_operation_screen(const menu_item_t* item, operation_phase_t phase, const char* owner);
 
-// Function to free a menu screen when done
-void free_menu_screen(screen_content_t* screen);
+// Function to remove a menu screen when done
+screen_pop_status_t remove_menu_screen(const char* owner);

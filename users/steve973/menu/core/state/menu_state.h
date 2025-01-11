@@ -18,7 +18,7 @@ typedef enum {
 // History for menu back navigation
 typedef struct {
     const menu_item_t* items[MAX_MENU_DEPTH];
-    uint8_t depth;
+    int8_t depth;
 } menu_history_t;
 
 // Core menu state structure
@@ -41,16 +41,20 @@ typedef struct menu_state {
 
 // State management functions
 void init_menu_state(void);
+bool push_menu_history(const menu_item_t* item);
+bool pop_menu_history(void);
+uint8_t get_history_depth(void);
 
 // State query functions
 bool is_menu_active(void);
 nav_context_t get_current_context(void);
 bool is_shortcuts_enabled(void);
 int8_t get_selected_index(void);
-
+const menu_item_t* get_current_menu(void);
+uint32_t get_menu_timeout(void);
 
 // State modification functions
-void set_current_menu(const menu_item_t* menu);
-void set_selected_index(uint8_t index);
+bool set_current_menu(const menu_item_t* menu);
+bool set_selected_index(uint8_t index);
 void set_menu_timeout(uint32_t timeout_ms);
 void set_shortcuts_visible(bool visible);

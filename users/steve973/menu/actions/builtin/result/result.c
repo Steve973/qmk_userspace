@@ -3,6 +3,8 @@
 #include "../../../display/menu_display.h"
 #include "../../../core/operation/operation_types.h"
 
+#define RESULT_OWNER "result"
+
 phase_result_t result_init(operation_context_t* operation_state) {
     operation_state->current_phase = OPERATION_PHASE_RESULT;
     // This comes after the Action phase, so the previous result should be SUCCESS
@@ -19,13 +21,7 @@ phase_result_t result_init(operation_context_t* operation_state) {
         return PHASE_RESULT_CANCEL;
     }
 
-    screen_content_t* screen = create_operation_screen(operation_state->item, OPERATION_PHASE_RESULT);
-    push_screen((managed_screen_t){
-        .owner = MENU_OWNER,
-        .is_custom = false,
-        .display.content = screen,
-        .refresh_interval_ms = 0
-    });
+    create_operation_screen(operation_state->item, OPERATION_PHASE_RESULT, RESULT_OWNER);
 
     dprintln("Result init passed -- advancing");
     return PHASE_RESULT_ADVANCE;
@@ -47,7 +43,7 @@ phase_result_t result_input(operation_context_t* operation_state) {
 }
 
 phase_result_t result_processing(operation_context_t* operation_state) {
-    pop_screen(MENU_OWNER);
+    remove_menu_screen(RESULT_OWNER);
     dprintln("Result processing passed -- advancing");
     return PHASE_RESULT_ADVANCE;
 }

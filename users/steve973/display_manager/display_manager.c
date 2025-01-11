@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include "quantum/logging/debug.h"
@@ -280,6 +281,18 @@ screen_push_status_t push_screen(managed_screen_t screen) {
     return SCREEN_PUSH_SUCCESS;
 }
 
+static void free_screen_memory(managed_screen_t* screen) {
+    if (screen) {
+        free((void*)screen->owner);
+        if (screen->display.content) {
+            screen_content_t* screen_content = screen->display.content;
+            if (screen_content->elements) {
+                free(screen_content->elements);
+            }
+        }
+    }
+}
+
 /**
  * @brief Removes the top screen from the stack so that the next screen can be displayed.
  *
@@ -310,7 +323,9 @@ screen_pop_status_t pop_screen(const char* owner) {
 
     clear_display();
 
-    --screen_stack.top;
+    // Free screen memory
+    managed_screen_t* screen = &screen_stack.screens[screen_stack.top--];
+    free_screen_memory(screen);
     return SCREEN_POP_SUCCESS;
 }
 

@@ -3,6 +3,8 @@
 #include "../../../display/menu_display.h"
 #include "../../../core/operation/operation_types.h"
 
+#define CONFIRMATION_OWNER "confirmation"
+
 phase_result_t confirmation_init(operation_context_t* operation_state) {
     operation_state->current_phase = OPERATION_PHASE_CONFIRMATION;
     // This comes after the Input phase, so the previous result should be SUCCESS
@@ -21,13 +23,7 @@ phase_result_t confirmation_init(operation_context_t* operation_state) {
         return PHASE_RESULT_CANCEL;
     }
 
-    screen_content_t* screen = create_operation_screen(operation_state->item, OPERATION_PHASE_CONFIRMATION);
-    push_screen((managed_screen_t){
-        .owner = MENU_OWNER,
-        .is_custom = false,
-        .display.content = screen,
-        .refresh_interval_ms = 0
-    });
+    create_operation_screen(operation_state->item, OPERATION_PHASE_CONFIRMATION, CONFIRMATION_OWNER);
 
     dprintln("Confirmation init passed -- advancing");
     return PHASE_RESULT_ADVANCE;
@@ -38,7 +34,7 @@ phase_result_t confirmation_input(operation_context_t* operation_state) {
         dprintln("Confirmation input failed -- cancelling");
         return PHASE_RESULT_CANCEL;
     } else if (operation_state->choice_made > -1) {
-        pop_screen(MENU_OWNER);
+        remove_menu_screen(CONFIRMATION_OWNER);
     }
     dprintln("Confirmation input passed -- advancing");
     return PHASE_RESULT_ADVANCE;

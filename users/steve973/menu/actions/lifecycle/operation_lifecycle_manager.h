@@ -13,4 +13,4 @@ void set_phase_state(operation_context_t* context, phase_state_t state);
 void complete_phase_state(operation_context_t* context);  // Sets to PHASE_STATE_COMPLETE
 
 // Initialization
-void state_manager_init(operation_context_t* context);
+void operation_lifecycle_manager_init(operation_context_t* context);

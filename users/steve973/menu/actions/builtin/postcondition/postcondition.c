@@ -3,6 +3,8 @@
 #include "../../../display/menu_display.h"
 #include "../../../core/operation/operation_types.h"
 
+#define POSTCONDITION_OWNER "postcondition"
+
 phase_result_t postcondition_init(operation_context_t* operation_state) {
     operation_state->current_phase = OPERATION_PHASE_POSTCONDITION;
     // This comes after the Result phase, so the previous result should be SUCCESS
@@ -22,13 +24,7 @@ phase_result_t postcondition_init(operation_context_t* operation_state) {
     }
 
     // Set up the display configuration for precondition phase
-    screen_content_t* screen = create_operation_screen(operation_state->item, OPERATION_PHASE_POSTCONDITION);
-    push_screen((managed_screen_t){
-        .owner = MENU_OWNER,
-        .is_custom = false,
-        .display.content = screen,
-        .refresh_interval_ms = 0
-    });
+    create_operation_screen(operation_state->item, OPERATION_PHASE_POSTCONDITION, POSTCONDITION_OWNER);
 
     dprintln("Postcondition init passed -- advancing");
     return PHASE_RESULT_ADVANCE;
@@ -44,7 +40,7 @@ phase_result_t postcondition_processing(operation_context_t* operation_state) {
     const struct postcondition_config* config = operation_state->item->operation.postcondition;
     operation_result_t (*handler_func)(void*) = (operation_result_t (*)(void*))config->handler;
     operation_state->result = handler_func(config->args);
-    pop_screen(MENU_OWNER);
+    remove_menu_screen(POSTCONDITION_OWNER);
     if (operation_state->result != OPERATION_RESULT_SUCCESS) {
         dprintln("Postcondition processing failed -- cancelling");
         return PHASE_RESULT_CANCEL;

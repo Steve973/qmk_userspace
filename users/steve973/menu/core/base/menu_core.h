@@ -4,8 +4,8 @@
 #include "action.h"
 
 // Menu mode activation/deactivation
-void enter_menu_mode(void);
-void exit_menu_mode(void);
+bool enter_menu_mode(void);
+bool exit_menu_mode(void);
 
 // Core input processing
 bool process_menu_record(uint16_t keycode, keyrecord_t *record);

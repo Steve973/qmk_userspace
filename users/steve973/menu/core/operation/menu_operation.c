@@ -7,7 +7,7 @@
 #include "../../actions/builtin/action/action.h"
 #include "../../actions/builtin/result/result.h"
 #include "../../actions/builtin/postcondition/postcondition.h"
-#include "../../actions/state_mgmt/state_manager.h"
+#include "../../actions/lifecycle/operation_lifecycle_manager.h"
 
 // Internal state for the current operation
 static operation_context_t operation_state;
@@ -67,10 +67,11 @@ static void handle_phase_result(operation_context_t* context, phase_result_t res
  *
  * @param item The menu item to start the operation for.
  */
-void start_operation(const menu_item_t* item) {
+bool start_operation(const menu_item_t* item) {
     if (!item || !item->operation.action) {
         dprintf("ERROR -- Cancelling operation because no action is defined for: %s\r\n", item->label);
         set_phase_state(&operation_state, PHASE_STATE_CANCELLED);
+        return false;
     } else {
         operation_state = (operation_context_t){
             .current_phase = OPERATION_PHASE_NONE,
@@ -80,8 +81,9 @@ void start_operation(const menu_item_t* item) {
             .phase_data = NULL,
             .result = OPERATION_RESULT_NONE
         };
-        state_manager_init(&operation_state);
+        operation_lifecycle_manager_init(&operation_state);
         execute_operation();
+        return true;
     }
 }
 
@@ -148,7 +150,8 @@ bool is_operation_in_progress(void) {
            operation_state.current_phase != OPERATION_PHASE_COMPLETE;
 }
 
-void cancel_operation(void) {
+bool cancel_operation(void) {
     dprintln("Cancelling operation");
     set_phase_state(&operation_state, PHASE_STATE_CANCELLED);
+    return true;
 }

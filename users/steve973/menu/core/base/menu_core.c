@@ -2,7 +2,6 @@
 #include "deferred_exec.h"
 #include "keyboards/fingerpunch/src/fp_rgb_common.h"
 #include "timeout_indicator/timeout_indicator.h"
-#include "display_manager/display_manager.h"
 #include "../../display/menu_display.h"
 #include "../navigation/input_handler.h"
 #include "../navigation/menu_navigation.h"
@@ -13,7 +12,6 @@
 
 // External declarations
 extern const menu_item_t* const menu_root;
-extern menu_state_t menu_state;
 static uint8_t menu_timeout_token = INVALID_DEFERRED_TOKEN;
 
 /**
@@ -48,9 +46,14 @@ void update_menu_activity(void) {
     timeout_indicator_reset(menu_timeout_token);
 }
 
-void enter_menu_mode(void) {
+static void exit_menu_timeout(void) {
+    dprintln("Menu timeout reached -- exiting menu mode");
+    exit_menu_mode();
+}
+
+bool enter_menu_mode(void) {
     if (is_menu_active()) {
-        return;
+        return false;
     }
 
     set_menu_mode_lighting(true);
@@ -58,16 +61,15 @@ void enter_menu_mode(void) {
     // Display initial menu
     menu_home();
 
-    // Update activity timestamp
-    update_menu_activity();
-
-    menu_timeout_token = timeout_indicator_create(menu_state.timeout_ms, &exit_menu_mode);
-    dprintf("Entered menu mode\n");
+    menu_timeout_token = timeout_indicator_create(get_menu_timeout(), &exit_menu_timeout);
+    dprintln("Entered menu mode");
+    return true;
 }
 
-void exit_menu_mode(void) {
+bool exit_menu_mode(void) {
+    dprintln("Exiting menu mode");
     if (!is_menu_active()) {
-        return;
+        return false;
     }
 
     timeout_indicator_cancel(menu_timeout_token);
@@ -80,11 +82,11 @@ void exit_menu_mode(void) {
 
     // Clear all menu screens
     while (can_navigate_back()) {
-        menu_pop();
+        menu_return();
     }
 
     // Also remove the main menu screen
-    pop_screen(MENU_OWNER);
+    remove_menu_screen(MENU_OWNER);
 
     // Reset menu state
     init_menu_state();
@@ -94,13 +96,12 @@ void exit_menu_mode(void) {
     clear_keyboard();
 
     dprintln("Exited menu mode");
+    return true;
 }
 
 bool process_menu_record(uint16_t keycode, keyrecord_t *record) {
     if (!is_menu_active() || !record->event.pressed) return false;
 
     // Handle all menu-mode input
-    handle_menu_input(keycode, record);
-
-    return false;
+    return handle_menu_input(keycode, record);
 }

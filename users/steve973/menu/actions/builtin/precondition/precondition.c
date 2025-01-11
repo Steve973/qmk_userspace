@@ -3,6 +3,8 @@
 #include "../../../display/menu_display.h"
 #include "../../../core/operation/operation_types.h"
 
+#define PRECONDITION_OWNER "precondition"
+
 phase_result_t precondition_init(operation_context_t* operation_state) {
     operation_state->current_phase = OPERATION_PHASE_PRECONDITION;
     // Precondition is first in the chain, so prev_result should be NONE
@@ -20,13 +22,7 @@ phase_result_t precondition_init(operation_context_t* operation_state) {
     }
 
     // Set up the display configuration for precondition phase
-    screen_content_t* screen = create_operation_screen(operation_state->item, OPERATION_PHASE_PRECONDITION);
-    push_screen((managed_screen_t){
-        .owner = MENU_OWNER,
-        .is_custom = false,
-        .display.content = screen,
-        .refresh_interval_ms = 0
-    });
+    create_operation_screen(operation_state->item, OPERATION_PHASE_PRECONDITION, PRECONDITION_OWNER);
 
     dprintln("Precondition init passed -- advancing");
     return PHASE_RESULT_ADVANCE;
@@ -42,7 +38,7 @@ phase_result_t precondition_processing(operation_context_t* operation_state) {
     const struct precondition_config* config = operation_state->item->operation.precondition;
     operation_result_t (*handler_func)(void*) = (operation_result_t (*)(void*))config->handler;
     operation_state->result = handler_func(config->args);
-    pop_screen(MENU_OWNER);
+    remove_menu_screen(PRECONDITION_OWNER);
     if (operation_state->result != OPERATION_RESULT_SUCCESS) {
         dprintln("Precondition processing failed -- cancelling");
         return PHASE_RESULT_CANCEL;

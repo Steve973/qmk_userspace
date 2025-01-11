@@ -126,7 +126,7 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     SRC += menu/actions/builtin/postcondition/postcondition.c
     SRC += menu/actions/builtin/precondition/precondition.c
     SRC += menu/actions/builtin/result/result.c
-    SRC += menu/actions/state_mgmt/state_manager.c
+    SRC += menu/actions/lifecycle/operation_lifecycle_manager.c
 
     MENU_TOOL := $(QMK_USER_DIR)/menu/generator/generate_menu.py
     MENU_JSON ?= $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu/config/menu_config.json

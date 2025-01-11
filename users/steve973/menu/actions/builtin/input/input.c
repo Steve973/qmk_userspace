@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include "quantum/logging/debug.h"
 #include "input.h"
-#include "../../state_mgmt/state_manager.h"
+#include "../../lifecycle/operation_lifecycle_manager.h"
 #include "../../../display/menu_display.h"
 #include "../../../core/operation/operation_types.h"
+
+#define INPUT_OWNER "input"
 
 static int8_t input_idx = -1;
 
@@ -40,13 +42,7 @@ phase_result_t input_init(operation_context_t* operation_state) {
     switch(current_input->type) {
         case INPUT_TYPE_RANGE:
         case INPUT_TYPE_OPTIONS:
-            screen_content_t* screen = create_operation_screen(operation_state->item, OPERATION_PHASE_INPUT);
-            push_screen((managed_screen_t){
-                .owner = MENU_OWNER,
-                .is_custom = false,
-                .display.content = screen,
-                .refresh_interval_ms = 0
-            });
+            create_operation_screen(operation_state->item, OPERATION_PHASE_INPUT, INPUT_OWNER);
             break;
 
         case INPUT_TYPE_CUSTOM:
@@ -100,7 +96,7 @@ phase_result_t input_input(operation_context_t* operation_state) {
                 break;
         }
 
-        pop_screen(MENU_OWNER);
+        remove_menu_screen(INPUT_OWNER);
 
         if (input_idx + 1 < operation_state->item->operation.input_count) {
             input_idx++;

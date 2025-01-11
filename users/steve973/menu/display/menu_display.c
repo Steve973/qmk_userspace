@@ -62,21 +62,28 @@ static screen_content_t* convert_display_content(const display_content_t* displa
     return screen;
 }
 
-screen_content_t* create_menu_screen(const menu_item_t* menu_item) {
+screen_push_status_t create_menu_screen(const menu_item_t* menu_item, int8_t (*get_highlight_index)(void), const char* owner) {
     if (!menu_item) {
         dprintf("create_menu_screen: menu_item is NULL\n");
-        return NULL;
+        return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     if (!menu_item->display) {
         dprintf("create_menu_screen: menu_item->display is NULL\n");
-        return NULL;
+        return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     dprintf("Creating menu screen for: %s\n", menu_item->label);
-    return convert_display_content(menu_item->display);
+    screen_content_t* screen = convert_display_content(menu_item->display);
+    screen->get_highlight_index = get_highlight_index;
+    return push_screen((managed_screen_t){
+        .owner = MENU_OWNER,
+        .is_custom = false,
+        .display.content = screen,
+        .refresh_interval_ms = 0
+    });
 }
 
-screen_content_t* create_operation_screen(const menu_item_t* item, operation_phase_t phase) {
-    if (!item || !item->display) return NULL;
+screen_push_status_t create_operation_screen(const menu_item_t* item, operation_phase_t phase, const char* owner) {
+    if (!item || !item->display) return SCREEN_PUSH_FAIL_SCREEN_NULL;
 
     dprintf("Creating operation screen for: %s, phase: %d\n", item->label, phase);
 
@@ -101,17 +108,19 @@ screen_content_t* create_operation_screen(const menu_item_t* item, operation_pha
             display = item->operation.postcondition_display;
             break;
         default:
-            return NULL;
+            dprintf("Operation screen creation failed: invalid operation phase: %d\n", phase);
+            return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
 
-    return convert_display_content(display);
+    screen_content_t* screen = convert_display_content(display);
+    return push_screen((managed_screen_t){
+        .owner = owner,
+        .is_custom = false,
+        .display.content = screen,
+        .refresh_interval_ms = 0
+    });
 }
 
-void free_menu_screen(screen_content_t* screen) {
-    if (screen) {
-        if (screen->elements) {
-            free(screen->elements);
-        }
-        free(screen);
-    }
+screen_pop_status_t remove_menu_screen(const char* owner) {
+    return pop_screen(owner);
 }

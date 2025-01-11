@@ -1,16 +1,11 @@
 #pragma once
 
 #include <stdbool.h>
-#include "../structure/menu_item.h"
 
 // Core navigation functions
-void menu_home(void);
-bool menu_enter(void);
-bool menu_back(void);
-bool menu_pop(void);
+bool menu_home(void);
+bool menu_invoke(void);
+bool menu_return(void);
 
 // Navigation queries
 bool can_navigate_back(void);
-
-// Navigation state
-const menu_item_t* get_current_menu(void);

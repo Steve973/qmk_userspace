@@ -1,10 +1,12 @@
+#include <stdint.h>
+#include "debug.h"
 #include "../base/menu_core.h"
 #include "../navigation/input_handler.h"
 #include "../navigation/menu_navigation.h"
 #include "../state/menu_state.h"
 
-void handle_menu_input(uint16_t keycode, keyrecord_t* record) {
-    if (!record->event.pressed || !is_menu_active()) return;
+bool handle_menu_input(uint16_t keycode, keyrecord_t* record) {
+    if (!record->event.pressed || !is_menu_active()) return false;
 
     nav_context_t context = get_current_context();
 
@@ -23,13 +25,14 @@ void handle_menu_input(uint16_t keycode, keyrecord_t* record) {
         default:
             break;
     }
-
     update_menu_activity();
+    return false;
 }
 
-void handle_menu_navigation_input(uint16_t keycode) {
+bool handle_menu_navigation_input(uint16_t keycode) {
+    dprintf("Menu navigation input: %d\n", keycode);
     const menu_item_t* current = get_current_menu();
-    if (!current || !current->children) return;
+    if (!current) return false;
 
     uint8_t item_count = current->child_count;
     uint8_t current_index = get_selected_index();
@@ -38,33 +41,21 @@ void handle_menu_navigation_input(uint16_t keycode) {
     switch (keycode) {
         case KC_W:
         case KC_UP:
-            if (current_index > 0) {
-                set_selected_index(current_index - 1);
-            } else {
-                set_selected_index(item_count - 1);
-            }
-            break;
+            return set_selected_index((current_index + item_count - 1) % item_count);
 
         case KC_S:
         case KC_DOWN:
-            if (current_index < item_count - 1) {
-                set_selected_index(current_index + 1);
-            } else {
-                set_selected_index(0);
-            }
-            break;
+            return set_selected_index((current_index + 1) % item_count);
 
         case KC_D:
         case KC_ENTER:
         case KC_RIGHT:
-            menu_enter();
-            break;
+            return menu_invoke();
 
         case KC_A:
         case KC_ESC:
         case KC_LEFT:
-            menu_back();
-            break;
+            return can_navigate_back() ? menu_return() : exit_menu_mode();
 
         default:
             // Handle shortcuts if enabled
@@ -74,14 +65,19 @@ void handle_menu_navigation_input(uint16_t keycode) {
                     const menu_item_t* item = current->children[i];
                     if (item->shortcut && keycode == item->shortcut[0]) {
                         set_selected_index(i);
-                        menu_enter();
+                        return menu_invoke();
                     }
                 }
+                return false;
+            } else {
+                return false;
             }
     }
 }
 
-void handle_operation_input(uint16_t keycode) {
+bool handle_operation_input(uint16_t keycode) {
+    dprintf("Operation input: %d\n", keycode);
     // TODO: Implement operation-specific input handling
     // This would handle input during various operation phases
+    return true;
 }

@@ -1,5 +1,5 @@
 #include "quantum/logging/debug.h"
-#include "state_manager.h"
+#include "operation_lifecycle_manager.h"
 #include "../../core/operation/operation_types.h"
 
 /**
@@ -11,7 +11,7 @@
  *
  * @param context The operation context to initialize.
  */
-void state_manager_init(operation_context_t* context) {
+void operation_lifecycle_manager_init(operation_context_t* context) {
     context->current_phase = OPERATION_PHASE_PRECONDITION;
     context->phase_state = PHASE_STATE_INIT;
 }
