@@ -131,7 +131,6 @@ When `type` is "action", the operation object can contain:
 These are optional conditions that control item visibility/availability:
 ```json
 "conditions": {
-    "feature_enabled": "RGB_MATRIX_ENABLE",  // Only show if feature enabled
     "value_equals": {                        // Show based on value
         "variable": "keyboard_mode",
         "value": "gaming"
@@ -696,9 +695,6 @@ Single selection example:
 "input": [{
     "type": "options",
     "options": ["Arrows", "WASD", "Analog", "Mouse"],
-    "options.conditions": {          // Optional conditions per option
-        "Mouse": "POINTING_DEVICE_ENABLE"
-    },
     "prompt": "Select mode:",
     "default": "{current_mode}",
     "wrap": true,                    // Wrap around at ends
@@ -786,11 +782,12 @@ When designing multi-input operations:
 
 ## Conditions and Features
 
-Menu items and options can be conditionally displayed or enabled based on various
+Menu items and options can be conditionally included/excluded based on various
 conditions.
 
 ### Feature Gating
-Control menu item visibility based on enabled QMK features.
+Control menu item compile-time inclusion or exclusion based on enabled QMK
+features.
 
 ```json
 {

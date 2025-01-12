@@ -134,8 +134,16 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     MENU_GENERATED_FILES_DIR := $(QMK_USER_DIR)/menu/core/generated
     MENU_STRUCTURE_FILE := $(MENU_GENERATED_FILES_DIR)/menu_structure.txt
 
-    $(MENU_DATA_FILE): $(MENU_JSON_FILES) $(MENU_TOOL)
-		python3 $(MENU_TOOL) $@ $(MENU_STRUCTURE_FILE) $(MENU_JSON_FILES)
+    MENU_JSON_FILES += $(QMK_USER_DIR)/menu/config/menu_configuration.json
+
+    # Get all enabled features from QMK's OPT_DEFS
+    MENU_DEFINES_FILE := $(INTERMEDIATE_OUTPUT)/menu_defines.txt
+    $(MENU_DEFINES_FILE):
+		@mkdir -p $(dir $@)
+		@echo "$(foreach def,$(OPT_DEFS),$(if $(and $(findstring _ENABLE,$(def)),$(findstring -D,$(def))),$(patsubst -D%,%,$(def))))" > $@
+
+    $(MENU_DATA_FILE): $(MENU_JSON_FILES) $(MENU_TOOL) $(MENU_DEFINES_FILE)
+		python3 $(MENU_TOOL) $@ $(MENU_STRUCTURE_FILE) $(MENU_DEFINES_FILE) $(MENU_JSON_FILES)
 
     SRC += $(MENU_DATA_FILE)
 
@@ -158,8 +166,8 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     ifneq ($(strip $(MENU_ACTION_FILES)),)
         $(INTERMEDIATE_OUTPUT)/menu/core/base/menu_core.o: $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
         MENU_ACTION_GENERATOR := $(QMK_USER_DIR)/menu/generator/generate_action_lookup.py
-        $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c: $(MENU_JSON_FILES) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_FILES) $(MENU_DATA_FILE)
-		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON_FILES) --output $@ $(MENU_ACTION_FILES)
+        $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c: $(MENU_JSON_FILES) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_FILES) $(MENU_DATA_FILE) $(MENU_DEFINES_FILE)
+		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON_FILES) --output $@ --defines $(MENU_DEFINES_FILE) $(MENU_ACTION_FILES)
 
         SRC += $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
     endif

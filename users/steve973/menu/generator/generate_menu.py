@@ -14,16 +14,25 @@ from menu.generator.parser import parse_menu_config
 from menu.generator.generator import CGenerator
 
 def main():
-    if len(sys.argv) < 4:
-        print("Usage: generate_menu.py <output_path> <tree_output_path> <json_path> [<json_path2> ...]")
+    if len(sys.argv) < 5:
+        print("Usage: generate_menu.py <output_path> <tree_output_path> <defines_file> <json_path> [<json_path2> ...]")
         sys.exit(1)
 
     output_path = Path(sys.argv[1])
     tree_output_path = Path(sys.argv[2])
-    json_paths = [Path(p) for p in sys.argv[3:]]
+    defines_file = Path(sys.argv[3])
+    json_paths = [Path(p) for p in sys.argv[4:]]
+
+    # Read QMK feature definitions
+    enabled_features = set()
+    with open(defines_file) as f:
+        for line in f:
+            for feature in line.split():
+                if feature.strip():
+                    enabled_features.add(feature.strip())
 
     # Parse and merge all JSON files
-    root, action_names = parse_menu_config(json_paths)
+    root, _ = parse_menu_config(json_paths, enabled_features)
 
     # Create generator and generate tree visualization
     generator = CGenerator()

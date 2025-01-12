@@ -1,30 +1,84 @@
-from typing import Any, Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Set, Tuple, Union, Optional
 from pathlib import Path
 import json
 from typing import Any, Dict, Union
-from .models import MenuItem, Operation, PreconditionConfig, InputConfig, ConfirmConfig, ResultConfig, PostconditionConfig, ResultMode, InputType, Conditions, FeatureRule, ValueRule, RuleGroup, MatchType
+from .models import (
+    MenuItem, Operation, PreconditionConfig, InputConfig, ConfirmConfig,
+    ResultConfig, PostconditionConfig, ResultMode, InputType, Conditions,
+    ValueRule, RuleGroup, MatchType
+)
 
 
-def parse_menu_config(json_paths: Union[List[str], List[Path]]) -> Tuple[MenuItem, Set[str]]:
+def parse_menu_config(json_paths: List[Path], enabled_features: Set[str]) -> Tuple[MenuItem, Set[str]]:
     """Parse menu configuration and collect all action names"""
     action_names = set()
 
-    # Initialize with first file
-    with open(json_paths[0]) as f:
-        merged_data = json.load(f)
+    merged_data = {
+        "main_menu": {
+            "label": "Main Menu",
+            "label_short": "Main",
+            "icon": "NONE",
+            "type": "submenu",
+            "children": []
+        }
+    }
 
-    # Merge additional files
-    for path in json_paths[1:]:
+    # Merge items from all JSON files
+    for path in json_paths:
         with open(path) as f:
-            data = json.load(f)
-            # Only merge children arrays at the top level
-            if "children" in data["main_menu"]:
-                if "children" not in merged_data["main_menu"]:
-                    merged_data["main_menu"]["children"] = []
-                merged_data["main_menu"]["children"].extend(data["main_menu"]["children"])
+            items = json.load(f)
+            # If it's wrapped in main_menu or children, get the actual items
+            if isinstance(items, dict):
+                items = items.get("children", []) if "children" in items else items.get("main_menu", {}).get("children", [])
+            merged_data["main_menu"]["children"].extend(
+                filter_menu_items(items, enabled_features)
+            )
 
-    root = parse_menu_item(merged_data["main_menu"], action_names)
+    root = parse_menu_item(merged_data["main_menu"], action_names, enabled_features)
     return root, action_names
+
+def filter_menu_items(items: List[Dict], enabled_features: Set[str]) -> List[Dict]:
+    """Filter menu items based on feature conditions"""
+    filtered = []
+    for item in items:
+        include, enabled_by = should_include_item(item, enabled_features)
+        if include:
+            if "children" in item:
+                item["children"] = filter_menu_items(item["children"], enabled_features)
+            if enabled_by:
+                item["enabled_by"] = enabled_by
+            filtered.append(item)
+    return filtered
+
+def should_include_item(item: Dict, enabled_features: Set[str]) -> Tuple[bool, Optional[str]]:
+    """Check if an item should be included based on feature conditions"""
+    # Check for feature enable condition
+    if "conditions.feature_enabled" in item:
+        feature = item["conditions.feature_enabled"]
+        is_enabled = feature in enabled_features
+        print(f"Checking feature {feature}: {'enabled' if is_enabled else 'disabled'}")  # Debug
+        return (feature in enabled_features, feature)
+
+    # Check for value conditions
+    if "conditions" in item:
+        conditions = item["conditions"]
+        if "match" in conditions and "rules" in conditions:
+            rules = conditions["rules"]
+            match_type = conditions["match"]
+
+            # Keep only value conditions
+            value_rules = []
+            for rule in rules:
+                value_rules.append(rule)
+
+            # Update conditions to only include value rules
+            if value_rules:
+                conditions["rules"] = value_rules
+            else:
+                del item["conditions"]
+
+    # If no conditions or only value conditions, include the item
+    return (True, None)
 
 def merge_menu_data(target: Dict, source: Dict, path: str = ""):
     """Merge menu structures with override protection"""
@@ -57,16 +111,24 @@ def merge_menu_data(target: Dict, source: Dict, path: str = ""):
             target[key] = value
 
 
-def parse_menu_item(data: Dict[str, Any], action_names: Set[str]) -> MenuItem:
-    """Parse single menu item and children, and collect action names"""
-    if "label" not in data or "type" not in data:
-        raise ValueError("Menu item missing required fields")
+def parse_menu_item(data: Dict, action_names: Set[str], enabled_features: Set[str]) -> MenuItem:
+    """Parse single menu item and collect action names"""
+    if not should_include_item(data, enabled_features):
+        return None
+
+    missing_fields = []
+    if "label" not in data:
+        missing_fields.append("label")
+    if "type" not in data:
+        missing_fields.append("type")
+
+    if missing_fields:
+        raise ValueError(f"Menu item missing required fields: {', '.join(missing_fields)}\nData: {data}")
+
 
     # Handle conditions.feature_enabled shorthand
     conditions = None
-    if "conditions.feature_enabled" in data:
-        conditions = Conditions.from_shorthand(data["conditions.feature_enabled"])
-    elif "conditions" in data:
+    if "conditions" in data:
         conditions = parse_conditions(data["conditions"])
 
     # Parse operation if present and collect action name
@@ -79,7 +141,7 @@ def parse_menu_item(data: Dict[str, Any], action_names: Set[str]) -> MenuItem:
     # Parse children recursively
     children = []
     if "children" in data:
-        children = [parse_menu_item(child, action_names) for child in data["children"]]
+        children = [child for child in (parse_menu_item(child, action_names, enabled_features) for child in data["children"]) if child is not None]
 
     return MenuItem(
         label=data["label"],
@@ -90,7 +152,8 @@ def parse_menu_item(data: Dict[str, Any], action_names: Set[str]) -> MenuItem:
         help_text=data.get("help_text"),
         operation=operation,
         conditions=conditions,
-        children=children
+        children=children,
+        enabled_by=data.get("enabled_by")
     )
 
 
@@ -179,13 +242,18 @@ def parse_conditions(data: Dict[str, Any]) -> Conditions:
     """Parse condition rules"""
     rules = []
     for rule_data in data["rules"]:
-        if "feature_enabled" in rule_data:
-            rules.append(FeatureRule(feature=rule_data["feature_enabled"]))
-        elif "value_equals" in rule_data:
+        if "value_equals" in rule_data:
             value_data = rule_data["value_equals"]
             rules.append(ValueRule(
                 variable=value_data["variable"],
                 value=value_data["value"]
+            ))
+        elif "value_compare" in rule_data:
+            value_data = rule_data["value_compare"]
+            rules.append(ValueCompareRule(
+                variable=value_data["variable"],
+                value=value_data["value"],
+                operator=value_data["operator"]
             ))
         elif "match" in rule_data:
             rules.append(parse_rule_group(rule_data))

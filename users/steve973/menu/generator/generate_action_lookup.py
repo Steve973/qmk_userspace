@@ -17,6 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Generate menu action lookup table')
     parser.add_argument('--json', required=True, nargs='+', help='Path to menu configuration JSON files')
     parser.add_argument('--output', required=True, help='Output C file path')
+    parser.add_argument('--defines', required=True, help='Path to QMK feature definitions')
     parser.add_argument('files', nargs='*', help='C source files to scan')
     return parser.parse_args()
 
@@ -69,9 +70,18 @@ def main():
     print(f"Creating directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Read QMK feature definitions
+    enabled_features = set()
+    with open(args.defines) as f:
+        for line in f:
+            if '=' in line:
+                feature, value = line.strip().split('=', 1)
+                if value.strip() == 'yes':
+                    enabled_features.add(feature.strip())
+
     # Get action names from menu config
     json_paths = [Path(p) for p in args.json]
-    root, action_names = parse_menu_config(json_paths)
+    _, action_names = parse_menu_config(json_paths, enabled_features)
 
     # Scan C files for function definitions
     found_actions = {}

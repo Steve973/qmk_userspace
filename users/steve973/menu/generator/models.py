@@ -192,13 +192,17 @@ class BaseRule:
     pass
 
 @dataclass
-class FeatureRule(BaseRule):
-    feature: str
-
-@dataclass
-class ValueRule(BaseRule):
+class ValueRule:
     variable: str
     value: str
+    type: str = "value_equals"  # default to value_equals
+
+@dataclass
+class ValueCompareRule:
+    variable: str
+    value: str
+    operator: str  # will be one of: equals, not_equals, greater_than, less_than, greater_equals, less_equals
+    type: str = "value_compare"
 
 @dataclass
 class RuleGroup(BaseRule):
@@ -209,13 +213,6 @@ class RuleGroup(BaseRule):
 class Conditions:
     match: MatchType
     rules: List[Union[BaseRule, RuleGroup]]
-
-    @classmethod
-    def from_shorthand(cls, feature: str) -> 'Conditions':
-        return cls(
-            match=MatchType.ALL,
-            rules=[FeatureRule(feature=feature)]
-        )
 
 @dataclass
 class MenuItem:
@@ -228,6 +225,7 @@ class MenuItem:
     operation: Optional[Operation] = None
     conditions: Optional[Union[str, Conditions]] = None
     children: List['MenuItem'] = field(default_factory=list)
+    enabled_by: Optional[str] = None
     parent: Optional['MenuItem'] = None
 
     def __post_init__(self):

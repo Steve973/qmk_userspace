@@ -148,14 +148,30 @@ static const struct result_config {{ name }}_result = {
 {% endif %}
 
 {# Generate condition rules if present #}
-{% if item.conditions %}
+{% if item.conditions and item.conditions.rules %}
 static const struct condition_rule_config {{ name }}_rules[] = {
+    {% for rule in item.conditions.rules %}
     {
-        .type = RULE_FEATURE_ENABLED,
+        {% if rule.type == "value_equals" %}
+        .type = RULE_VALUE_EQUALS,
         .rule_data = {
-            .feature = "{{ item.conditions.feature_enabled }}"
+            .value_equals = {
+                .variable = "{{ rule.variable }}",
+                .value = "{{ rule.value }}"
+            }
         }
-    }
+        {% elif rule.type == "value_compare" %}
+        .type = RULE_VALUE_COMPARE,
+        .rule_data = {
+            .value_compare = {
+                .variable = "{{ rule.variable }}",
+                .value = "{{ rule.value }}",
+                .operator = COMPARE_{{ rule.operator|upper }}
+            }
+        }
+        {% endif %}
+    }{{ "," if not loop.last }}
+    {% endfor %}
 };
 {% endif %}
 

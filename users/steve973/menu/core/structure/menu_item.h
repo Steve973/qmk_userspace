@@ -33,7 +33,6 @@ typedef enum {
  * Rule Types for Condition Checking
  */
 typedef enum {
-    RULE_FEATURE_ENABLED,    // Check if QMK feature is enabled
     RULE_VALUE_EQUALS,       // Compare variable against value
     RULE_VALUE_COMPARE      // Compare with operators (>, <, etc)
 } rule_type_t;
@@ -147,11 +146,15 @@ typedef struct conditions_config {
     const struct condition_rule_config {
         rule_type_t type;
         union rule_data_config {
-            const char* feature;    // Feature flag name
             struct value_equals_config {
                 const char* variable;
                 const char* value;
             } value_equals;
+            struct value_compare_config {
+                const char* variable;
+                const char* value;
+                compare_operator_t operator;
+            } value_compare;
         } rule_data;
     }* rules;
     uint8_t rule_count;

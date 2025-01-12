@@ -1,0 +1,159 @@
+[
+    {
+        "label": "Menu Options",
+        "label_short": "MenuOpt",
+        "icon": "NONE",
+        "shortcut": "KC_O",
+        "type": "submenu",
+        "help_text": "Configure menu system behavior",
+        "children": [
+            {
+                "label": "Show Shortcuts",
+                "label_short": "ShCut",
+                "icon": "NONE",
+                "shortcut": "KC_S",
+                "type": "action",
+                "help_text": "Display shortcut keys in menu labels.\nExample: 'Mode (M)'",
+                "operation": {
+                    "action": "set_menu_show_shortcuts",
+                    "input": [{
+                        "type": "options",
+                        "options": ["Off", "On"],
+                        "default": "{menu_show_shortcuts}",
+                        "wrap": true
+                    }],
+                    "result": {
+                        "message": "Show shortcuts: {value}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Default Timeouts",
+                "label_short": "DefTmout",
+                "icon": "NONE",
+                "shortcut": "KC_T",
+                "type": "submenu",
+                "help_text": "Set default timeout values for menu operations",
+                "children": [
+                    {
+                        "label": "Result Display",
+                        "label_short": "Result",
+                        "icon": "NONE",
+                        "shortcut": "KC_R",
+                        "type": "action",
+                        "help_text": "Default seconds to show operation results",
+                        "operation": {
+                            "action": "set_menu_result_timeout",
+                            "input": [{
+                                "type": "range",
+                                "range": "1..10:1",
+                                "prompt": "Seconds:",
+                                "default": "{menu_result_timeout}",
+                                "wrap": true
+                            }]
+                        }
+                    },
+                    {
+                        "label": "Confirmation",
+                        "label_short": "Conf",
+                        "icon": "NONE",
+                        "shortcut": "KC_C",
+                        "type": "action",
+                        "help_text": "Default seconds for confirmation dialogs",
+                        "operation": {
+                            "action": "set_menu_confirm_timeout",
+                            "input": [{
+                                "type": "range",
+                                "range": "10..60:5",
+                                "prompt": "Seconds:",
+                                "default": "{menu_confirm_timeout}",
+                                "wrap": true
+                            }]
+                        }
+                    },
+                    {
+                        "label": "Menu Timeout",
+                        "label_short": "MenuTmout",
+                        "icon": "NONE",
+                        "shortcut": "KC_M",
+                        "type": "action",
+                        "help_text": "Seconds until menu auto-exits",
+                        "operation": {
+                            "action": "set_menu_timeout_sec",
+                            "input": [{
+                                "type": "range",
+                                "range": "5..120:5",
+                                "prompt": "Seconds:",
+                                "default": "{menu_timeout}",
+                                "wrap": true
+                            }]
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "Navigation",
+                "label_short": "Nav",
+                "icon": "NONE",
+                "shortcut": "KC_N",
+                "type": "submenu",
+                "help_text": "Configure menu navigation options",
+                "children": [
+                    {
+                        "label": "WASD Keys",
+                        "label_short": "WASD",
+                        "icon": "NONE",
+                        "shortcut": "KC_W",
+                        "type": "action",
+                        "help_text": "Enable WASD keys for menu navigation",
+                        "operation": {
+                            "action": "set_menu_wasd_nav",
+                            "input": [{
+                                "type": "options",
+                                "options": ["Off", "On"],
+                                "default": "{menu_wasd_nav}",
+                                "wrap": true
+                            }]
+                        }
+                    },
+                    {
+                        "label": "Selection Style",
+                        "label_short": "Select",
+                        "icon": "NONE",
+                        "shortcut": "KC_S",
+                        "type": "action",
+                        "help_text": "Set menu item selection indicator",
+                        "operation": {
+                            "action": "set_menu_selection_style",
+                            "input": [{
+                                "type": "options",
+                                "options": ["Highlight", "> Pointer", "* Star"],
+                                "default": "{menu_selection_style}",
+                                "wrap": true
+                            }]
+                        }
+                    },
+                    {
+                        "label": "Shortcut Mode",
+                        "label_short": "ShCutMode",
+                        "icon": "NONE",
+                        "shortcut": "KC_M",
+                        "type": "action",
+                        "help_text": "Configure shortcut key behavior:\nDirect - Execute immediately\nSelect - Highlight first, execute on second press",
+                        "operation": {
+                            "action": "set_menu_shortcut_mode",
+                            "input": [{
+                                "type": "options",
+                                "options": ["Direct", "Select"],
+                                "default": "{menu_shortcut_mode}",
+                                "wrap": true
+                            }]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]
