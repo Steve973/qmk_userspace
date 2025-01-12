@@ -142,7 +142,7 @@ These are optional conditions that control item visibility/availability:
 ## Menu Types
 
 ### Action Items
-These are enu items that execute functions when selected. They can include input
+These are menu items that execute functions when selected. They can include input
 gathering, confirmation dialogs, and result display.
 
 ```json
@@ -158,6 +158,34 @@ gathering, confirmation dialogs, and result display.
     }
 }
 ```
+
+#### Implementing Action Handlers
+Action handlers must be C functions that match the operation handler signature and
+must be discoverable by the build system. The menu system uses a Python script
+during build to generate action lookup tables.
+
+To implement custom actions:
+
+1. Create C files containing your action handlers:
+```c
+operation_result_t my_custom_action(operation_result_t prev_result, void** input_values) {
+    // Implementation here...
+    return OPERATION_RESULT_SUCCESS;
+}
+```
+
+2. Configure `rules.mk` to find your action implementations:
+```make
+# Specify directories containing action implementations
+MENU_ACTION_LOCATIONS += $(KEYMAP_DIR)/menu/actions
+```
+
+The build system will:
+- Scan specified locations for .c files
+- Generate lookup tables mapping JSON action names to functions
+- Include the implementations in the final binary
+
+Action function names in your JSON must exactly match the C function names.
 
 ### Submenus 
 These are "container" items that hold other menu items. They are used to create
@@ -612,7 +640,8 @@ configuration options. When multiple inputs are needed, they can be combined in
 an array and will be collected in sequence.
 
 ### Range Input
-For numeric value selection within a defined range.
+For numeric value selection within a defined range, and step for increasing
+within the range.
 
 Single value example:
 
@@ -719,6 +748,7 @@ it should be aborted.
     ```
 
 Multiple custom inputs example:
+
     ```json
     "input": [
         {
@@ -878,7 +908,8 @@ for condition checking.
 
 ## Menu Options
 
-The menu system's behavior can be configured in several ways:
+The menu system's behavior can be configured and customized through preferences
+in several ways:
 
 ### Display Configuration
 - Show/hide keyboard shortcuts next to menu items (e.g. "Reset EEPROM (R)")
@@ -1025,14 +1056,3 @@ Example:
 ```
 
 Menu features register their variables by adding entries to the mapping table.
-
-## Examples
-- Basic Menu Items
-- Complex Operations
-- Conditional Features
-- Custom Input Handling
-
-## Implementation Notes
-- Memory Considerations
-- Performance Tips 
-- Best Practices
