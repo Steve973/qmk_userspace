@@ -197,28 +197,48 @@ for status displays and information pages.
 
 ## Operation Lifecycle
 
-Menu operations can have multiple phases that execute in sequence. This sequence
-consists of the following phases:
+Menu operations follow a state machine pattern, executing through multiple phases
+while maintaining normal keyboard operation between states. Each phase is handled
+through the display manager, showing appropriate screens for user interaction.
+The sequence consists of these phases:
 
-- `precondition`: Must evaluate to true in order to proceed
-- `input`: Data from the user that is needed to perform the action
-- `confirmation`: Explicit authorization from the user to proceed
-- `action`: Execute the task
-- `result`: Display the outcome of the task to the user
-- `postcondition`: Verification/cleanup/etc after the task has been completed
+- `precondition`: Optional validation/setup before starting
+- `input`: Gather required data from user
+- `confirmation`: Get user authorization to proceed
+- `action`: Execute the main operation
+- `result`: Show operation outcome
+- `postcondition`: Optional verification/cleanup
 
-Each phase is optional except for the action phase. It is also important to know
-that *all* operation lifecycle phases will run, regardless of a failure during
-any of the phases.  The operation lifecycle phases all return a result of their
-execution, and that result is passed to the next phase.  This ensures a
-consistent operation lifecycle workflow, and any subsequent phase can respond
-to a previous phase's result.  For example, the `postcondition` phase can
-perform a cleanup, or revert any actions that occurred prior to, or during, a
-failure in an earlier phase.
+Each phase (except action) is optional. The operation advances through phases
+when the keyboard's normal processing loop reaches the menu system's processing
+point, avoiding blocking operations.
+
+### Phase Management
+
+Operations maintain state and handle user input through screen management:
+```c
+typedef enum {
+    OPERATION_PHASE_NONE,
+    OPERATION_PHASE_PRECONDITION,
+    OPERATION_PHASE_INPUT,
+    OPERATION_PHASE_CONFIRMATION,
+    OPERATION_PHASE_ACTION,
+    OPERATION_PHASE_RESULT,
+    OPERATION_PHASE_POSTCONDITION,
+    OPERATION_PHASE_COMPLETE
+} operation_phase_t;
+```
 
 ### Precondition Phase
-Optional checks or setup before starting an operation.
+Optional validation phase that executes before any other operation phases. This
+phase allows operation implementers to define checks that must pass before the
+operation can proceed. For example, checking if hardware is ready, validating
+system state, or ensuring prerequisites are met.
 
+TODO: Do we need to either add a failure message, or only show the message if
+      the precondition check fails?
+
+JSON Configuration:
 ```json
 "precondition": {
     "handler": "check_joystick_ready",
@@ -229,9 +249,31 @@ Optional checks or setup before starting an operation.
 }
 ```
 
+#### Precondition Check Implementation:
+Precondition handlers perform necessary validation:
+```c
+operation_result_t check_joystick_ready(operation_result_t prev_result, void** input_values) {
+    // Verify joystick is in valid state before proceeding
+    if (!is_joystick_responding()) {
+        return OPERATION_RESULT_REJECTED;  // Prevent operation from continuing
+    }
+    return OPERATION_RESULT_SUCCESS;       // Allow operation to proceed
+}
+```
+
+If the precondition check fails, the user is notified and the operation is
+aborted. On success, the operation proceeds to its next phase.
+
 ### Input Phase
-Gather user input through various methods. Input can be a single value or an
-array of inputs that will be collected in sequence.
+The input phase handles user input collection through a display-managed interface.
+Input can be a single value or multiple values collected in sequence. Each input
+type (range, options, custom) has its own display format and navigation behavior.
+
+Each input type (range, options, custom) has its own display format and strictly
+defined navigation controls:
+- Up/Down: Adjust values or select options
+- Enter/Right: Confirm current value
+- Escape/Left: Cancel input
 
 Single input example:
 
@@ -298,41 +340,132 @@ with the same number of elements, and in the same order that they are defined.
 Each input's value can be referenced in subsequent prompts or in
 confirmation/result messages using `{values[0]}`, `{values[1]}`, etc.
 
-### Confirmation Phase
-Request user confirmation before proceeding.
+During input collection, the menu system captures all keyboard input, ensuring
+that only valid menu interactions are processed. While the keyboard continues
+its normal processing loops, user input is restricted to the current menu
+operation until it completes or is cancelled.
 
+### Confirmation Phase
+The confirmation phase provides a safety mechanism, allowing users to verify
+or cancel an operation before it executes. This is particularly important for
+operations that make significant changes or cannot be easily undone.
+
+JSON Configuration:
 ```json
 "confirm": {
-    "message": "Reset all settings?\nThis cannot be undone!",
+    "message": "Reset all settings? This cannot be undone!",
     "timeout_sec": 30,
-    "default": false,
-    "true_text": "Reset",
+    "default": false,     // Default to safer option
+    "true_text": "Reset", // Custom confirmation button text
     "false_text": "Cancel"
 }
 ```
 
-### Action Phase
-Required - executes the main operation function.
+When a confirmation phase is configured, the user must explicitly choose to
+proceed or cancel. The confirmation:
+- Shows what action will be taken
+- Can provide custom text for the choices to continue or cancel
+- Times out to prevent hanging operations
+- Defaults to the safer option (cancel) if not specified
 
+If the user:
+- Confirms: Operation proceeds to action phase
+- Cancels or timeout occurs: Operation is aborted
+
+This provides an important safeguard for operations with significant consequences,
+such as resetting EEPROM or entering bootloader mode.
+
+### Action Phase
+This is the only required phase in an operation lifecycle. The action phase
+executes the core function of the operation, using any collected input values
+from previous phases.
+
+JSON Configuration:
 ```json
 "action": "reset_eeprom"  // Function name to call
 ```
 
-### Result Phase
-Display operation result or status.
+The action handler receives any input values collected during the input phase
+and the results of any previous phases. This allows the action to:
+- Use validated input values
+- Check if previous phases succeeded, and abort if previous phases have failed
+- Access multiple input values in the order they were collected
 
-```json
-"result": {
-    "message": "Settings reset complete\nRebooting...",
-    "mode": "timed",      // or "acknowledge"
-    "timeout_sec": 2,
-    "ok_text": "Continue" // For acknowledge mode
+Example handler:
+```c
+operation_result_t set_rgb_handler(operation_result_t prev_result, void** input_values) {
+    // Check if we should proceed based on previous phases
+    if (prev_result != OPERATION_RESULT_SUCCESS) {
+        return prev_result;  // Don't execute if previous phases failed
+    }
+    
+    // Access input values in collection order
+    uint8_t effect = (uint8_t)input_values[0];
+    uint8_t speed = (uint8_t)input_values[1];
+    
+    // Perform the actual operation
+    bool success = rgb_matrix_set_effect(effect, speed);
+    
+    return success ? OPERATION_RESULT_SUCCESS : OPERATION_RESULT_ERROR;
 }
 ```
 
-### Postcondition Phase
-Optional verification or cleanup after operation.
+The action's result determines whether subsequent phases (result display,
+postcondition) will indicate success or failure to the user, or if the operation
+will stop altogether.
 
+### Result Phase
+The result phase shows the outcome of an operation to the user. Results can be
+displayed either with a timed message that automatically dismisses, or with an
+acknowledgment message that requires user interaction (e.g., an "OK" button) to
+dismiss.
+
+JSON Configuration:
+```json
+"result": {
+    "message": "Settings reset complete\nRebooting...",
+    "mode": "timed",      // "timed" or "acknowledge"
+    "timeout_sec": 2,     // Used for timed mode
+    "ok_text": "Continue" // Used for acknowledge mode
+}
+```
+
+Result messages can include:
+- Status information using variable substitution: `{status}`
+- Values changed by the operation: `{value}`
+- Operation-specific data: `{drift}`, `{selected_mode}`, etc.
+
+Example result configurations:
+
+Timed result (auto-dismissing):
+```json
+"result": {
+    "message": "Brightness set to {value}",
+    "mode": "timed",
+    "timeout_sec": 1
+}
+```
+
+Acknowledgment result (user must confirm):
+```json
+"result": {
+    "message": "Neutral calibration complete\nDrift: {drift}%",
+    "mode": "acknowledge",
+    "ok_text": "Continue"
+}
+```
+
+The result phase completes either when its timeout is reached (timed mode) or
+when the user acknowledges the message (acknowledge mode).
+
+### Postcondition Phase
+The optional postcondition phase executes after the action and result phases.
+This phase can verify the operation's effects, perform cleanup, or execute
+follow-up tasks. Like the precondition phase, it can display status during
+execution, if needed. The user can supply any arguments that the specified
+function needs to perform its intended duties.
+
+JSON Configuration:
 ```json
 "postcondition": {
     "handler": "verify_settings_reset",
@@ -343,7 +476,51 @@ Optional verification or cleanup after operation.
 }
 ```
 
+The postcondition handler can:
+- Verify the operation completed successfully
+- Clean up temporary states
+- Perform additional required actions
+- Revert changes if verification fails
+
+Example handler:
+```c
+operation_result_t verify_settings_reset(operation_result_t prev_result, void** input_values) {
+    // Only verify if the main action succeeded
+    if (prev_result != OPERATION_RESULT_SUCCESS) {
+        return prev_result;
+    }
+    
+    // Access args passed from JSON configuration
+    const operation_args_t* args = (operation_args_t*)input_values[0];
+    uint8_t retries = args->retries;
+    
+    // Attempt verification with retries
+    while (retries > 0) {
+        if (verify_eeprom_reset()) {
+            return OPERATION_RESULT_SUCCESS;
+        }
+        retries--;
+        wait_ms(100);  // Brief delay between attempts
+    }
+    
+    return OPERATION_RESULT_ERROR;  // All retries failed
+}
+```
+
+The postcondition phase is particularly useful for operations that:
+- Need to verify hardware state changes
+- Require cleanup after completion
+- Must ensure system integrity after changes
+
 ### Complete Example
+This example demonstrates a complete operation that uses multiple phases to handle
+a settings reset. It shows how:
+- Precondition checks system readiness
+- Input collects the type of reset to perform
+- Confirmation ensures user intends to proceed
+- Action performs the reset
+- Result displays completion status
+- Postcondition verifies the reset
 ```json
 {
     "label": "Reset Settings",
@@ -375,6 +552,9 @@ Optional verification or cleanup after operation.
     }
 }
 ```
+
+The operation provides user feedback at each step, handles potential failures
+gracefully, and ensures the reset is both intentional and verified.
 
 ### Operation Handlers
 
