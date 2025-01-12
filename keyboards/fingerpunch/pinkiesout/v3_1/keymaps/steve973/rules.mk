@@ -129,11 +129,13 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     SRC += menu/actions/lifecycle/operation_lifecycle_manager.c
 
     MENU_TOOL := $(QMK_USER_DIR)/menu/generator/generate_menu.py
-    MENU_JSON ?= $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu/config/menu_config.json
+    MENU_JSON_FILES ?= $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu/config/menu_config.json
     MENU_DATA_FILE := $(INTERMEDIATE_OUTPUT)/menu_data.c
+    MENU_GENERATED_FILES_DIR := $(QMK_USER_DIR)/menu/core/generated
+    MENU_STRUCTURE_FILE := $(MENU_GENERATED_FILES_DIR)/menu_structure.txt
 
-    $(MENU_DATA_FILE): $(MENU_JSON) $(MENU_TOOL)
-		python3 $(MENU_TOOL) $< $@
+    $(MENU_DATA_FILE): $(MENU_JSON_FILES) $(MENU_TOOL)
+		python3 $(MENU_TOOL) $@ $(MENU_STRUCTURE_FILE) $(MENU_JSON_FILES)
 
     SRC += $(MENU_DATA_FILE)
 
@@ -154,12 +156,12 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
 
     # Only set up action lookup generation if we found files
     ifneq ($(strip $(MENU_ACTION_FILES)),)
-        $(INTERMEDIATE_OUTPUT)/menu/core/base/menu_core.o: $(QMK_USER_DIR)/menu/core/generated/menu_action_lookup.c
+        $(INTERMEDIATE_OUTPUT)/menu/core/base/menu_core.o: $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
         MENU_ACTION_GENERATOR := $(QMK_USER_DIR)/menu/generator/generate_action_lookup.py
-        $(QMK_USER_DIR)/menu/core/generated/menu_action_lookup.c: $(MENU_JSON) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_FILES) $(MENU_DATA_FILE)
-		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON) --output $@ $(MENU_ACTION_FILES)
+        $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c: $(MENU_JSON_FILES) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_FILES) $(MENU_DATA_FILE)
+		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON_FILES) --output $@ $(MENU_ACTION_FILES)
 
-        SRC += $(QMK_USER_DIR)/menu/core/generated/menu_action_lookup.c
+        SRC += $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
     endif
 endif
 

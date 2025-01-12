@@ -15,7 +15,7 @@ from menu.generator.parser import parse_menu_config
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate menu action lookup table')
-    parser.add_argument('--json', required=True, help='Path to menu configuration JSON')
+    parser.add_argument('--json', required=True, nargs='+', help='Path to menu configuration JSON files')
     parser.add_argument('--output', required=True, help='Output C file path')
     parser.add_argument('files', nargs='*', help='C source files to scan')
     return parser.parse_args()
@@ -70,7 +70,8 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Get action names from menu config
-    root, action_names = parse_menu_config(Path(args.json))
+    json_paths = [Path(p) for p in args.json]
+    root, action_names = parse_menu_config(json_paths)
 
     # Scan C files for function definitions
     found_actions = {}

@@ -51,3 +51,45 @@ const menu_item_t* const menu_root = &menu_item_0;
         ))
 
         return item_name
+
+    @staticmethod
+    def generate_menu_tree(root: MenuItem, indent: int = 0) -> str:
+        """Generate tree-like visualization of menu structure"""
+        output = []
+        if indent == 0:
+            output.append("Menu Structure:")
+            output.append("└── " + root.label)
+            prefix = "    "  # Initial indent for items under Main Menu
+        else:
+            prefix = "    " * indent
+
+        for i, child in enumerate(root.children):
+            is_last = i == len(root.children) - 1
+
+            # Add the appropriate connector
+            if is_last:
+                output.append(f"{prefix}└── {child.label}")
+                child_prefix = f"{prefix}    "  # Indent for last item's children
+            else:
+                output.append(f"{prefix}├── {child.label}")
+                child_prefix = f"{prefix}│   "  # Indent for non-last item's children
+
+            # Process children recursively
+            if child.children:
+                for j, grandchild in enumerate(child.children):
+                    last_grandchild = j == len(child.children) - 1
+                    if last_grandchild:
+                        output.append(f"{child_prefix}└── {grandchild.label}")
+                    else:
+                        output.append(f"{child_prefix}├── {grandchild.label}")
+
+                    # Add great-grandchildren if they exist
+                    if grandchild.children:
+                        grandchild_prefix = f"{child_prefix}    " if last_grandchild else f"{child_prefix}│   "
+                        for k, great_grandchild in enumerate(grandchild.children):
+                            if k == len(grandchild.children) - 1:
+                                output.append(f"{grandchild_prefix}└── {great_grandchild.label}")
+                            else:
+                                output.append(f"{grandchild_prefix}├── {great_grandchild.label}")
+
+        return "\n".join(output)

@@ -1,19 +1,60 @@
-from typing import Any, Dict, Union, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple, Union
 from pathlib import Path
 import json
 from typing import Any, Dict, Union
 from .models import MenuItem, Operation, PreconditionConfig, InputConfig, ConfirmConfig, ResultConfig, PostconditionConfig, ResultMode, InputType, Conditions, FeatureRule, ValueRule, RuleGroup, MatchType
 
 
-def parse_menu_config(json_path: Union[str, Path]) -> Tuple[MenuItem, Set[str]]:
+def parse_menu_config(json_paths: Union[List[str], List[Path]]) -> Tuple[MenuItem, Set[str]]:
     """Parse menu configuration and collect all action names"""
     action_names = set()
 
-    with open(json_path) as f:
-        data = json.load(f)
+    # Initialize with first file
+    with open(json_paths[0]) as f:
+        merged_data = json.load(f)
 
-    root = parse_menu_item(data["main_menu"], action_names)
+    # Merge additional files
+    for path in json_paths[1:]:
+        with open(path) as f:
+            data = json.load(f)
+            # Only merge children arrays at the top level
+            if "children" in data["main_menu"]:
+                if "children" not in merged_data["main_menu"]:
+                    merged_data["main_menu"]["children"] = []
+                merged_data["main_menu"]["children"].extend(data["main_menu"]["children"])
+
+    root = parse_menu_item(merged_data["main_menu"], action_names)
     return root, action_names
+
+def merge_menu_data(target: Dict, source: Dict, path: str = ""):
+    """Merge menu structures with override protection"""
+    for key, value in source.items():
+        current_path = f"{path}/{key}" if path else key
+
+        if key in target:
+            if isinstance(value, dict) and isinstance(target[key], dict):
+                # Check for explicit override
+                if value.get("merge_behavior") == "override_existing":
+                    target[key] = value
+                else:
+                    # Merge children arrays
+                    if "children" in value and "children" in target[key]:
+                        target[key]["children"].extend(value["children"])
+                    # Merge other dict properties recursively
+                    merge_menu_data(target[key], value, current_path)
+            elif key == "children" and isinstance(value, list) and isinstance(target[key], list):
+                # Directly extend children arrays
+                target[key].extend(value)
+            elif value.get("merge_behavior") == "override_existing":
+                # Allow explicit overrides
+                target[key] = value
+            else:
+                # Only raise for conflicts in non-children fields
+                if key != "children":
+                    raise ValueError(f"Menu item conflict at '{current_path}' - explicit override required")
+        else:
+            # New item, simply add it
+            target[key] = value
 
 
 def parse_menu_item(data: Dict[str, Any], action_names: Set[str]) -> MenuItem:
