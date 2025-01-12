@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define MAX_SCREEN_STACK_SIZE 10
+
 /**
  * @brief The status of pushing a screen to the stack.
  */
@@ -136,8 +138,9 @@ typedef struct {
  * specifies the index of the top screen in the stack.
  */
 typedef struct {
-    managed_screen_t screens[10];
+    managed_screen_t screens[MAX_SCREEN_STACK_SIZE];
     int top;
+    uint8_t max_size;
 } screen_stack_t;
 
 /**

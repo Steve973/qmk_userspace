@@ -15,7 +15,8 @@ static char display_buffer[DISPLAY_BUFFER_SIZE];
  * @brief A stack of managed screens.
  */
 static screen_stack_t screen_stack = {
-    .top = -1
+    .top = -1,
+    .max_size = 10
 };
 
 /**
@@ -209,7 +210,7 @@ screen_push_status_t swap_screen(managed_screen_t screen) {
         dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_OWNER_NULL]);
         return SCREEN_PUSH_FAIL_OWNER_NULL;
     }
-    if (screen_stack.top >= 9) {
+    if (screen_stack.top >= screen_stack.max_size) {
         dprintf("Failed to swap screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_STACK_FULL]);
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
@@ -260,7 +261,7 @@ screen_push_status_t push_screen(managed_screen_t screen) {
         dprintf("Failed to push screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_OWNER_NULL]);
         return SCREEN_PUSH_FAIL_OWNER_NULL;
     }
-    if (screen_stack.top >= 9) {
+    if (screen_stack.top >= screen_stack.max_size) {
         dprintf("Failed to push screen: %s\n", screen_push_status_strings[SCREEN_PUSH_FAIL_STACK_FULL]);
         return SCREEN_PUSH_FAIL_STACK_FULL;
     }
@@ -282,14 +283,26 @@ screen_push_status_t push_screen(managed_screen_t screen) {
 }
 
 static void free_screen_memory(managed_screen_t* screen) {
-    if (screen) {
-        free((void*)screen->owner);
-        if (screen->display.content) {
-            screen_content_t* screen_content = screen->display.content;
-            if (screen_content->elements) {
-                free(screen_content->elements);
-            }
+    if (!screen) return;
+
+    dprintf("Freeing screen memory for owner: %s\n", screen->owner);
+
+    if (!screen->is_custom && screen->display.content) {
+        screen_content_t* content = screen->display.content;
+
+        // We only free the elements array that was dynamically allocated in
+        // convert_display_content(), but NOT the text content it points to
+        if (content->elements) {
+            dprintf("Freeing elements array at %p\n", (void*)content->elements);
+            free(content->elements);
+            content->elements = NULL;
         }
+
+        // Free the screen_content_t wrapper structure that was allocated
+        // in convert_display_content()
+        dprintf("Freeing screen content at %p\n", (void*)content);
+        free(content);
+        screen->display.content = NULL;
     }
 }
 
