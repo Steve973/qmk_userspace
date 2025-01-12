@@ -138,6 +138,7 @@ void render_list_item(const list_item_t* item, uint8_t x, uint8_t y) {
  * @param highlight The type of highlighting to apply.
  */
 void render_image(const image_t* image, uint8_t x, uint8_t y) {
+    if (!image || !image->data) return;
     painter_image_handle_t img = qp_load_image_mem(image->data);
     if (img != NULL) {
         qp_drawimage(display, x, y, img);
