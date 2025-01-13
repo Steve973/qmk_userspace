@@ -1,0 +1,117 @@
+[
+    {
+        "label": "System",
+        "label_short": "SYS",
+        "icon": "NONE",
+        "shortcut": "KC_S",
+        "type": "submenu",
+        "help_text": "System configuration and utilities",
+        "children": [
+            {
+                "label": "Reset EEPROM",
+                "label_short": "RstEE",
+                "icon": "NONE",
+                "shortcut": "KC_R",
+                "type": "action",
+                "help_text": "Reset all settings to factory defaults.\nWARNING: This will erase all saved settings.",
+                "operation": {
+                    "action": "reset_eeprom",
+                    "confirm": {
+                        "message": "Reset all settings?\nThis cannot be undone!",
+                        "timeout_sec": 30,
+                        "default": false,
+                        "true_text": "Reset",
+                        "false_text": "Cancel"
+                    },
+                    "result": {
+                        "message": "Settings reset complete\nRebooting...",
+                        "mode": "timed",
+                        "timeout_sec": 2
+                    }
+                }
+            },
+            {
+                "label": "Bootloader",
+                "label_short": "BootLdr",
+                "icon": "NONE",
+                "shortcut": "KC_B",
+                "type": "action",
+                "help_text": "Enter bootloader mode for firmware update.\nKeyboard will disconnect from USB.",
+                "operation": {
+                    "action": "enter_bootloader",
+                    "confirm": {
+                        "message": "Enter bootloader mode?",
+                        "timeout_sec": 30,
+                        "default": false,
+                        "true_text": "Yes",
+                        "false_text": "No"
+                    }
+                }
+            },
+            {
+                "label": "Debug Info",
+                "label_short": "DbgInf",
+                "icon": "NONE",
+                "shortcut": "KC_D",
+                "type": "display",
+                "help_text": "View system information and configuration",
+                "operation": {
+                    "action": "show_debug_info"
+                }
+            },
+            {
+                "label": "Piezo Test",
+                "label_short": "PzTst",
+                "icon": "NONE",
+                "shortcut": "KC_P",
+                "type": "action",
+                "help_text": "Test piezo buzzer functionality",
+                "conditions.feature_enabled": "AUDIO_ENABLE",
+                "operation": {
+                    "action": "test_piezo",
+                    "result": {
+                        "message": "Testing piezo...",
+                        "mode": "timed",
+                        "timeout_sec": 2
+                    }
+                }
+            },
+            {
+                "label": "OLED Brightness",
+                "label_short": "Bright",
+                "icon": "NONE",
+                "shortcut": "KC_O",
+                "type": "action",
+                "help_text": "Adjust OLED display brightness",
+                "conditions.feature_enabled": "OLED_ENABLE",
+                "operation": {
+                    "action": "set_oled_brightness",
+                    "input": [{
+                        "type": "range",
+                        "range": "15..255:16",
+                        "prompt": "Brightness:",
+                        "default": "{oled_brightness}",
+                        "wrap": true,
+                        "live_preview": true
+                    }],
+                    "result": {
+                        "message": "Brightness set to {value}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "KB Stats",
+                "label_short": "KbStat",
+                "icon": "NONE",
+                "shortcut": "KC_K",
+                "type": "display",
+                "help_text": "View keyboard usage statistics",
+                "operation": {
+                    "action": "show_kb_stats"
+                }
+            }
+        ]
+    }
+]

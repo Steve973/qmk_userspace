@@ -1,0 +1,165 @@
+[
+    {
+        "label": "Joystick",
+        "label_short": "JS",
+        "icon": "NONE",
+        "shortcut": "KC_J",
+        "type": "submenu",
+        "help_text": "Configure joystick settings and calibration",
+        "conditions.feature_enabled": "JOYSTICK_ENABLE",
+        "children": [
+            {
+                "label": "Calibration",
+                "label_short": "Cal",
+                "icon": "NONE",
+                "shortcut": "KC_C",
+                "type": "submenu",
+                "help_text": "Calibrate joystick neutral values and maximum range",
+                "children": [
+                    {
+                        "label": "Neutral",
+                        "label_short": "Neutral",
+                        "icon": "NONE",
+                        "shortcut": "KC_N",
+                        "type": "action",
+                        "help_text": "Calibrate center position.\nDo not touch joystick during calibration.",
+                        "operation": {
+                            "action": "calibrate_joystick_neutral",
+                            "confirm": {
+                                "message": "Release joystick and press Enter",
+                                "timeout_sec": 30
+                            },
+                            "result": {
+                                "message": "Neutral calibration complete\nDrift: {drift}%",
+                                "mode": "acknowledge",
+                                "ok_text": "Continue"
+                            }
+                        }
+                    },
+                    {
+                        "label": "Range",
+                        "label_short": "Range",
+                        "icon": "NONE",
+                        "shortcut": "KC_R",
+                        "type": "action",
+                        "help_text": "Calibrate maximum range.\nRotate joystick in full circles.",
+                        "operation": {
+                            "action": "calibrate_joystick_range",
+                            "confirm": {
+                                "message": "Move joystick in circles at maximum range",
+                                "timeout_sec": 30
+                            },
+                            "result": {
+                                "message": "Range calibration complete",
+                                "mode": "timed",
+                                "timeout_sec": 2
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "Mode",
+                "label_short": "Mode",
+                "icon": "NONE",
+                "shortcut": "KC_M",
+                "type": "action",
+                "help_text": "Select joystick operation mode",
+                "operation": {
+                    "action": "set_joystick_mode",
+                    "input": [{
+                        "type": "options",
+                        "options": ["Arrows", "WASD", "Analog", "Mouse"],
+                        "options.conditions": {
+                            "Mouse": "POINTING_DEVICE_ENABLE"
+                        },
+                        "prompt": "Select mode:",
+                        "default": "{current_stick_mode}",
+                        "wrap": true
+                    }],
+                    "result": {
+                        "message": "Mode set to: {selected_mode}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Sensitivity",
+                "label_short": "Sens",
+                "icon": "NONE",
+                "shortcut": "KC_S",
+                "type": "submenu",
+                "help_text": "Adjust joystick analog sensitivity",
+                "children": [
+                    {
+                        "label": "X Axis",
+                        "label_short": "XAxis",
+                        "icon": "NONE",
+                        "shortcut": "KC_X",
+                        "type": "action",
+                        "help_text": "Set X axis sensitivity",
+                        "operation": {
+                            "action": "set_x_axis_sensitivity",
+                            "input": [{
+                                "type": "range",
+                                "range": "0..100:5",
+                                "prompt": "X Sensitivity:",
+                                "default": 50,
+                                "wrap": true
+                            }],
+                            "result": {
+                                "message": "X sensitivity: {value}%",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    },
+                    {
+                        "label": "Y Axis",
+                        "label_short": "YAxis",
+                        "icon": "NONE",
+                        "shortcut": "KC_Y",
+                        "type": "action",
+                        "help_text": "Set Y axis sensitivity",
+                        "operation": {
+                            "action": "set_y_axis_sensitivity",
+                            "input": [{
+                                "type": "range",
+                                "range": "0..100:5",
+                                "prompt": "Y Sensitivity:",
+                                "default": 50,
+                                "wrap": true
+                            }],
+                            "result": {
+                                "message": "Y sensitivity: {value}%",
+                                "mode": "timed",
+                                "timeout_sec": 1
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "label": "Orientation",
+                "label_short": "Ornt",
+                "icon": "NONE",
+                "shortcut": "KC_O",
+                "type": "action",
+                "help_text": "Set physical up direction.\nMove joystick in physical UP direction.",
+                "operation": {
+                    "action": "detect_orientation",
+                    "confirm": {
+                        "message": "Move joystick in physical UP direction",
+                        "timeout_sec": 30
+                    },
+                    "result": {
+                        "message": "Orientation set",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            }
+        ]
+    }
+]

@@ -1,5 +1,7 @@
+#include <stdint.h>
 #include "quantum/rgb_matrix/rgb_matrix.h"
 #include "menu/core/operation/operation_types.h"
+#include "rgb_menu_actions.h"
 
 operation_result_t toggle_rgb(operation_result_t prev_result, void** input_values) {
     if (prev_result == OPERATION_RESULT_SUCCESS) {

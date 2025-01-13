@@ -1,3 +1,6 @@
+#include <stdint.h>
+#include <stdbool.h>
+#include "joystick_actions.h"
 #include "joystick/fp_joystick.h"
 #include "menu/core/operation/operation_types.h"
 

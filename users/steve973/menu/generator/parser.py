@@ -30,6 +30,7 @@ def parse_menu_config(json_paths: List[Path], enabled_features: Set[str]) -> Tup
             # If it's wrapped in main_menu or children, get the actual items
             if isinstance(items, dict):
                 items = items.get("children", []) if "children" in items else items.get("main_menu", {}).get("children", [])
+            items = sorted(items, key=lambda x: x["label"])
             merged_data["main_menu"]["children"].extend(
                 filter_menu_items(items, enabled_features)
             )
@@ -56,7 +57,6 @@ def should_include_item(item: Dict, enabled_features: Set[str]) -> Tuple[bool, O
     if "conditions.feature_enabled" in item:
         feature = item["conditions.feature_enabled"]
         is_enabled = feature in enabled_features
-        print(f"Checking feature {feature}: {'enabled' if is_enabled else 'disabled'}")  # Debug
         return (feature in enabled_features, feature)
 
     # Check for value conditions
@@ -142,6 +142,13 @@ def parse_menu_item(data: Dict, action_names: Set[str], enabled_features: Set[st
     children = []
     if "children" in data:
         children = [child for child in (parse_menu_item(child, action_names, enabled_features) for child in data["children"]) if child is not None]
+
+    # Parse children recursively and sort by label
+    children = []
+    if "children" in data:
+        child_data = sorted(data["children"], key=lambda x: x["label"])
+        children = [child for child in (parse_menu_item(child, action_names, enabled_features)
+                   for child in child_data) if child is not None]
 
     return MenuItem(
         label=data["label"],

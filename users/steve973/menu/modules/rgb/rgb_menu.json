@@ -1,0 +1,149 @@
+[
+    {
+        "label": "RGB",
+        "label_short": "RGB",
+        "icon": "NONE",
+        "shortcut": "KC_R",
+        "type": "submenu",
+        "help_text": "Configure RGB matrix settings",
+        "conditions.feature_enabled": "RGB_MATRIX_ENABLE",
+        "children": [
+            {
+                "label": "Mode",
+                "label_short": "Mode",
+                "icon": "NONE",
+                "shortcut": "KC_M",
+                "type": "action",
+                "help_text": "Select RGB matrix animation mode",
+                "operation": {
+                    "action": "set_rgb_mode",
+                    "input": [{
+                        "type": "options",
+                        "options": "{rgb_matrix_modes}",
+                        "prompt": "Select mode:",
+                        "default": "{current_rgb_mode}",
+                        "wrap": true,
+                        "display_values": "{rgb_matrix_mode_names}"
+                    }],
+                    "result": {
+                        "message": "Mode: {selected_mode_name}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Hue",
+                "label_short": "Hue",
+                "icon": "NONE",
+                "shortcut": "KC_H",
+                "type": "action",
+                "help_text": "Adjust RGB matrix color hue",
+                "operation": {
+                    "action": "set_rgb_hue",
+                    "input": [{
+                        "type": "range",
+                        "range": "0..255:8",
+                        "prompt": "Hue:",
+                        "default": "{rgb_matrix_hue}",
+                        "wrap": true,
+                        "live_preview": true
+                    }],
+                    "result": {
+                        "message": "Hue: {value}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Saturation",
+                "label_short": "Sat",
+                "icon": "NONE",
+                "shortcut": "KC_S",
+                "type": "action",
+                "help_text": "Adjust RGB matrix color saturation",
+                "operation": {
+                    "action": "set_rgb_sat",
+                    "input": [{
+                        "type": "range",
+                        "range": "0..255:8",
+                        "prompt": "Saturation:",
+                        "default": "{rgb_matrix_sat}",
+                        "wrap": true,
+                        "live_preview": true
+                    }],
+                    "result": {
+                        "message": "Saturation: {value}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Value",
+                "label_short": "Val",
+                "icon": "NONE",
+                "shortcut": "KC_V",
+                "type": "action",
+                "help_text": "Adjust RGB matrix brightness",
+                "operation": {
+                    "action": "set_rgb_val",
+                    "input": [{
+                        "type": "range",
+                        "range": "0..255:8",
+                        "prompt": "Brightness:",
+                        "default": "{rgb_matrix_val}",
+                        "wrap": true,
+                        "live_preview": true
+                    }],
+                    "result": {
+                        "message": "Brightness: {value}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Speed",
+                "label_short": "Speed",
+                "icon": "NONE",
+                "shortcut": "KC_P",
+                "type": "action",
+                "help_text": "Adjust RGB matrix animation speed",
+                "operation": {
+                    "action": "set_rgb_speed",
+                    "input": [{
+                        "type": "range",
+                        "range": "0..100:5",
+                        "prompt": "Speed:",
+                        "default": "{rgb_matrix_speed}",
+                        "wrap": true,
+                        "live_preview": true
+                    }],
+                    "result": {
+                        "message": "Speed: {value}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            },
+            {
+                "label": "Toggle RGB",
+                "label_short": "RgbTogg",
+                "icon": "NONE",
+                "shortcut": "KC_T",
+                "type": "action",
+                "help_text": "Toggle RGB matrix on/off",
+                "operation": {
+                    "action": "toggle_rgb",
+                    "result": {
+                        "message": "RGB Matrix: {rgb_matrix_enabled}",
+                        "mode": "timed",
+                        "timeout_sec": 1
+                    }
+                }
+            }
+        ]
+    }
+]

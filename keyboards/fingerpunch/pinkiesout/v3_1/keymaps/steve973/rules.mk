@@ -120,21 +120,46 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     SRC += menu/core/state/menu_state.c
     SRC += menu/core/structure/menu_item.c
     SRC += menu/display/menu_display.c
-    SRC += menu/actions/builtin/action/action.c
-    SRC += menu/actions/builtin/confirmation/confirmation.c
-    SRC += menu/actions/builtin/input/input.c
-    SRC += menu/actions/builtin/postcondition/postcondition.c
-    SRC += menu/actions/builtin/precondition/precondition.c
-    SRC += menu/actions/builtin/result/result.c
+    SRC += menu/actions/phases/action/action.c
+    SRC += menu/actions/phases/confirmation/confirmation.c
+    SRC += menu/actions/phases/input/input.c
+    SRC += menu/actions/phases/postcondition/postcondition.c
+    SRC += menu/actions/phases/precondition/precondition.c
+    SRC += menu/actions/phases/result/result.c
     SRC += menu/actions/lifecycle/operation_lifecycle_manager.c
 
+    # TODO: Change this to multiple menu info display screens
+	SRC += $(KEYMAP_DIR)/menu_modules/system_info.c
+
     MENU_TOOL := $(QMK_USER_DIR)/menu/generator/generate_menu.py
-    MENU_JSON_FILES ?= $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu/config/menu_config.json
     MENU_DATA_FILE := $(INTERMEDIATE_OUTPUT)/menu_data.c
     MENU_GENERATED_FILES_DIR := $(QMK_USER_DIR)/menu/core/generated
     MENU_STRUCTURE_FILE := $(MENU_GENERATED_FILES_DIR)/menu_structure.txt
 
-    MENU_JSON_FILES += $(QMK_USER_DIR)/menu/config/menu_configuration.json
+    # Collect all menu module directories
+    # Module parent directories are directories that contain menu module directories
+    # First default is `menu_modules` in the keymap directory
+    MENU_MODULE_PARENT_DIRS += $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu_modules
+    # Second default is `menu/modules` in the userspace directory
+    MENU_MODULE_PARENT_DIRS += $(QMK_USER_DIR)/menu/modules
+    # Load all module directories from the parent directories into MENU_MODULES_DIRS
+    MENU_MODULE_DIRS ?=
+    MENU_MODULE_DIRS += $(foreach parent,$(MENU_MODULE_PARENT_DIRS),$(wildcard $(parent)/*))
+
+    # Verify each dir has exactly one of each json/h/c file
+    $(foreach dir,$(MENU_MODULE_DIRS),\
+        $(if $(word 2,$(wildcard $(dir)/*.json)),$(error Multiple JSON files in $(dir)),)\
+        $(if $(word 2,$(wildcard $(dir)/*.c)),$(error Multiple C files in $(dir)),)\
+        $(if $(word 2,$(wildcard $(dir)/*.h)),$(error Multiple H files in $(dir)),)\
+    )
+
+    # For each module dir, find the json/h/c file triplet
+    MENU_JSON_FILES := $(foreach dir,$(MENU_MODULE_DIRS),$(wildcard $(dir)/*.json))
+    MENU_ACTION_HEADERS := $(foreach dir,$(MENU_MODULE_DIRS),$(wildcard $(dir)/*.h))
+    MENU_ACTION_SOURCES := $(foreach dir,$(MENU_MODULE_DIRS),$(wildcard $(dir)/*.c))
+
+    # Add sources to build
+    SRC += $(MENU_ACTION_SOURCES)
 
     # Get all enabled features from QMK's OPT_DEFS
     MENU_DEFINES_FILE := $(INTERMEDIATE_OUTPUT)/menu_defines.txt
@@ -147,27 +172,12 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
 
     SRC += $(MENU_DATA_FILE)
 
-    # User can specify their own action file locations
-    MENU_ACTION_LOCATIONS ?=
-
-    # If no locations specified, use defaults
-    ifeq ($(strip $(MENU_ACTION_LOCATIONS)),)
-        MENU_ACTION_LOCATIONS += $(KEYMAP_DIR)/menu/actions
-        MENU_ACTION_LOCATIONS += $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu/actions
-        MENU_ACTION_LOCATIONS += $(QMK_USER_DIR)/actions
-    endif
-
-    # Find all .c files in specified locations (if they exist)
-    MENU_ACTION_FILES := $(foreach dir,$(MENU_ACTION_LOCATIONS),$(shell find $(dir) -name '*.c' 2>/dev/null))
-    # Also add the menu action files to the source list
-	SRC += $(MENU_ACTION_FILES)
-
     # Only set up action lookup generation if we found files
-    ifneq ($(strip $(MENU_ACTION_FILES)),)
+    ifneq ($(strip $(MENU_ACTION_SOURCES)),)
         $(INTERMEDIATE_OUTPUT)/menu/core/base/menu_core.o: $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
         MENU_ACTION_GENERATOR := $(QMK_USER_DIR)/menu/generator/generate_action_lookup.py
-        $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c: $(MENU_JSON_FILES) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_FILES) $(MENU_DATA_FILE) $(MENU_DEFINES_FILE)
-		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON_FILES) --output $@ --defines $(MENU_DEFINES_FILE) $(MENU_ACTION_FILES)
+        $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c: $(MENU_JSON_FILES) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_SOURCES) $(MENU_DATA_FILE) $(MENU_DEFINES_FILE)
+		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON_FILES) --output $@ --defines $(MENU_DEFINES_FILE) $(MENU_ACTION_SOURCES)
 
         SRC += $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
     endif

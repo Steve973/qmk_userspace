@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include "quantum/logging/debug.h"
 #include "menu_operation.h"
-#include "../../actions/builtin/precondition/precondition.h"
-#include "../../actions/builtin/input/input.h"
-#include "../../actions/builtin/confirmation/confirmation.h"
-#include "../../actions/builtin/action/action.h"
-#include "../../actions/builtin/result/result.h"
-#include "../../actions/builtin/postcondition/postcondition.h"
+#include "../../actions/phases/precondition/precondition.h"
+#include "../../actions/phases/input/input.h"
+#include "../../actions/phases/confirmation/confirmation.h"
+#include "../../actions/phases/action/action.h"
+#include "../../actions/phases/result/result.h"
+#include "../../actions/phases/postcondition/postcondition.h"
 #include "../../actions/lifecycle/operation_lifecycle_manager.h"
 
 // Internal state for the current operation

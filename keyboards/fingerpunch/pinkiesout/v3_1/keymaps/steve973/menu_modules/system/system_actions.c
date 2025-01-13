@@ -5,6 +5,7 @@
 #include "quantum/audio/audio.h"
 #include "quantum/audio/musical_notes.h"
 #include "menu/core/operation/operation_types.h"
+#include "system_actions.h"
 
 uint32_t play_test_song(uint32_t trigger_time, void* cb_arg) {
     #ifdef AUDIO_ENABLE
@@ -71,6 +72,22 @@ operation_result_t decrease_oled_brightness(operation_result_t prev_result, void
 }
 
 operation_result_t set_oled_brightness(operation_result_t prev_result, void** input_values) {
+    if (prev_result == OPERATION_RESULT_SUCCESS) {
+        // TODO: Implement this
+        return OPERATION_RESULT_SUCCESS;
+    }
+    return prev_result;
+}
+
+operation_result_t show_debug_info(operation_result_t prev_result, void** input_values) {
+    if (prev_result == OPERATION_RESULT_SUCCESS) {
+        // TODO: Implement this
+        return OPERATION_RESULT_SUCCESS;
+    }
+    return prev_result;
+}
+
+operation_result_t show_kb_stats(operation_result_t prev_result, void** input_values) {
     if (prev_result == OPERATION_RESULT_SUCCESS) {
         // TODO: Implement this
         return OPERATION_RESULT_SUCCESS;
