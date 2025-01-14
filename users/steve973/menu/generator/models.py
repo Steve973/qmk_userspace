@@ -225,14 +225,12 @@ class MenuItem:
     operation: Optional[Operation] = None
     conditions: Optional[Union[str, Conditions]] = None
     children: List['MenuItem'] = field(default_factory=list)
+    screen_content: Optional[str] = None
     enabled_by: Optional[str] = None
     parent: Optional['MenuItem'] = None
 
     def __post_init__(self):
         self.type = MenuType(self.type)
-        # Handle shorthand conditions
-        if isinstance(self.conditions, str):
-            self.conditions = Conditions.from_shorthand(self.conditions)
         # Set parent refs
         for child in self.children:
             child.parent = self

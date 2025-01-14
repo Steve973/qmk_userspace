@@ -78,19 +78,3 @@ operation_result_t set_oled_brightness(operation_result_t prev_result, void** in
     }
     return prev_result;
 }
-
-operation_result_t show_debug_info(operation_result_t prev_result, void** input_values) {
-    if (prev_result == OPERATION_RESULT_SUCCESS) {
-        // TODO: Implement this
-        return OPERATION_RESULT_SUCCESS;
-    }
-    return prev_result;
-}
-
-operation_result_t show_kb_stats(operation_result_t prev_result, void** input_values) {
-    if (prev_result == OPERATION_RESULT_SUCCESS) {
-        // TODO: Implement this
-        return OPERATION_RESULT_SUCCESS;
-    }
-    return prev_result;
-}

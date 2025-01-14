@@ -123,6 +123,7 @@ typedef struct {
  */
 typedef struct {
     const char* owner;
+    bool is_const;
     bool is_custom;
     union {
         screen_content_t* content;    // For structured content

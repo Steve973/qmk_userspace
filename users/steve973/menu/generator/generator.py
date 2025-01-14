@@ -12,10 +12,16 @@ class CGenerator:
         self.template = self.env.get_template('menu_item.jinja2')
         self.item_count = 0
         self.output = None
+        self.screen_content_refs = set()
 
     def write_header(self):
-        self.output.write("""
+        extern_decls = "\n".join(f"extern const screen_content_t {name};"
+                                for name in sorted(self.screen_content_refs))
+        self.output.write(f"""
 #include "menu/core/structure/menu_item.h"
+
+// External screen content declarations
+{extern_decls if self.screen_content_refs else ""}
 
 // Generated menu structure
 """)
@@ -25,15 +31,27 @@ class CGenerator:
 const menu_item_t* const menu_root = &menu_item_0;
 """)
 
+    def collect_screen_content_refs(self, item: MenuItem):
+        """Collect all screen_content references from menu tree"""
+        if item.screen_content:
+            self.screen_content_refs.add(item.screen_content)
+        for child in item.children:
+            self.collect_screen_content_refs(child)
+
     def generate(self, root: MenuItem, output: TextIO):
         self.output = output
-        self.write_header()
+        self.collect_screen_content_refs(root)  # Collect refs first
+        self.write_header()                     # Now header can use the refs
         self.generate_menu_items(root)
         self.write_footer()
 
     def generate_menu_items(self, item: MenuItem, parent_name: str = None):
         item_name = f"menu_item_{self.item_count}"
         self.item_count += 1
+
+        # Collect screen_content reference if it exists
+        if item.screen_content:
+            self.screen_content_refs.add(item.screen_content)
 
         # Generate children first
         child_names = []
@@ -52,75 +70,45 @@ const menu_item_t* const menu_root = &menu_item_0;
 
         return item_name
 
+    # Helper function to get type indicator
     @staticmethod
-    def generate_menu_tree(root: MenuItem, indent: int = 0) -> str:
-        """Generate tree-like visualization of menu structure"""
-        MENU_WIDTH = 40  # Consistent alignment width
+    def get_type_indicator(item: MenuItem) -> str:
+        if item.type.value == "submenu":
+            return "[S]"
+        elif item.type.value == "action":
+            return "[A]"
+        elif item.type.value == "display":
+            return "[D]"
+        return "[?]"
 
+    @staticmethod
+    def generate_menu_tree(root: MenuItem, indent: int = 0, parent_is_last = []) -> str:
+        """Generate tree-like visualization of menu structure"""
+        MENU_WIDTH = 40
         output = []
+
         if indent == 0:
             output.append("Menu Structure:")
             output.append("└── " + root.label)
-            prefix = "    "  # Initial indent for items under Main Menu
-        else:
-            prefix = "    " * indent
+
+        # Build prefix using parent_is_last history
+        prefix = " " # One space for prefix because it is preceded by the type indicator
+        for i in range(indent):
+            prefix += "│   " if not parent_is_last[i] else "    "
 
         for i, child in enumerate(root.children):
             is_last = i == len(root.children) - 1
-            # Add the appropriate connector
-            if is_last:
-                base_line = f"{prefix}└── {child.label}"
-                if child.enabled_by:
-                    line = f"{base_line:<{MENU_WIDTH}}[{child.enabled_by}]"
-                else:
-                    line = base_line
-                output.append(line)
-                child_prefix = f"{prefix}    "  # Indent for last item's children
+            connector = "└── " if is_last else "├── "
+
+            base_line = f"{CGenerator.get_type_indicator(child)}{prefix}{connector}{child.label}"
+            if child.enabled_by:
+                line = f"{base_line:<{MENU_WIDTH}}[{child.enabled_by}]"
             else:
-                base_line = f"{prefix}├── {child.label}"
-                if child.enabled_by:
-                    line = f"{base_line:<{MENU_WIDTH}}[{child.enabled_by}]"
-                else:
-                    line = base_line
-                output.append(line)
-                child_prefix = f"{prefix}│   "  # Indent for non-last item's children
+                line = base_line
+            output.append(line)
 
-            # Process children recursively
             if child.children:
-                for j, grandchild in enumerate(child.children):
-                    last_grandchild = j == len(child.children) - 1
-                    if last_grandchild:
-                        base_line = f"{child_prefix}└── {grandchild.label}"
-                        if grandchild.enabled_by:
-                            line = f"{base_line:<{MENU_WIDTH}}[{grandchild.enabled_by}]"
-                        else:
-                            line = base_line
-                        output.append(line)
-                    else:
-                        base_line = f"{child_prefix}├── {grandchild.label}"
-                        if grandchild.enabled_by:
-                            line = f"{base_line:<{MENU_WIDTH}}[{grandchild.enabled_by}]"
-                        else:
-                            line = base_line
-                        output.append(line)
-
-                    # Add great-grandchildren if they exist
-                    if grandchild.children:
-                        grandchild_prefix = f"{child_prefix}    " if last_grandchild else f"{child_prefix}│   "
-                        for k, great_grandchild in enumerate(grandchild.children):
-                            if k == len(grandchild.children) - 1:
-                                base_line = f"{grandchild_prefix}└── {great_grandchild.label}"
-                                if great_grandchild.enabled_by:
-                                    line = f"{base_line:<{MENU_WIDTH}}[{great_grandchild.enabled_by}]"
-                                else:
-                                    line = base_line
-                                output.append(line)
-                            else:
-                                base_line = f"{grandchild_prefix}├── {great_grandchild.label}"
-                                if great_grandchild.enabled_by:
-                                    line = f"{base_line:<{MENU_WIDTH}}[{great_grandchild.enabled_by}]"
-                                else:
-                                    line = base_line
-                                output.append(line)
+                new_parent_is_last = parent_is_last + [is_last]
+                output.extend(CGenerator.generate_menu_tree(child, indent + 1, new_parent_is_last).split('\n'))
 
         return "\n".join(output)

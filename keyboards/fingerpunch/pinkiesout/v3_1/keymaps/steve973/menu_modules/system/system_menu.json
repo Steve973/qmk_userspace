@@ -49,17 +49,6 @@
                 }
             },
             {
-                "label": "Debug Info",
-                "label_short": "DbgInf",
-                "icon": "NONE",
-                "shortcut": "KC_D",
-                "type": "display",
-                "help_text": "View system information and configuration",
-                "operation": {
-                    "action": "show_debug_info"
-                }
-            },
-            {
                 "label": "Piezo Test",
                 "label_short": "PzTst",
                 "icon": "NONE",
@@ -102,15 +91,77 @@
                 }
             },
             {
-                "label": "KB Stats",
-                "label_short": "KbStat",
+                "label": "System Info",
+                "label_short": "SysInf",
                 "icon": "NONE",
-                "shortcut": "KC_K",
-                "type": "display",
-                "help_text": "View keyboard usage statistics",
-                "operation": {
-                    "action": "show_kb_stats"
-                }
+                "shortcut": "KC_I",
+                "type": "submenu",
+                "help_text": "View system information",
+                "children": [
+                    {
+                        "label": "Device Info",
+                        "label_short": "DevInf",
+                        "icon": "NONE",
+                        "shortcut": "KC_D",
+                        "type": "display",
+                        "help_text": "View device hardware information",
+                        "screen_content": "device_info_screen"
+                    },
+                    {
+                        "label": "Firmware Info",
+                        "label_short": "FwInf",
+                        "icon": "NONE",
+                        "shortcut": "KC_F",
+                        "type": "display",
+                        "help_text": "View firmware version information",
+                        "screen_content": "firmware_info_screen"
+                    },
+                    {
+                        "label": "Features",
+                        "label_short": "Feat",
+                        "icon": "NONE",
+                        "shortcut": "KC_T",
+                        "type": "display",
+                        "help_text": "View enabled features and their status",
+                        "screen_content": "feature_info_screen"
+                    },
+                    {
+                        "label": "Memory Info",
+                        "label_short": "MemInf",
+                        "icon": "NONE",
+                        "shortcut": "KC_M",
+                        "type": "display",
+                        "help_text": "View memory allocation details",
+                        "screen_content": "memory_info_screen"
+                    },
+                    {
+                        "label": "Keyboard Status",
+                        "label_short": "KbStat",
+                        "icon": "NONE",
+                        "shortcut": "KC_K",
+                        "type": "display",
+                        "help_text": "View current keyboard status",
+                        "screen_content": "kb_status_screen"
+                    },
+                    {
+                        "label": "Key Stats",
+                        "label_short": "KeySt",
+                        "icon": "NONE",
+                        "shortcut": "KC_Y",
+                        "type": "display",
+                        "help_text": "View typing statistics",
+                        "screen_content": "key_stats_screen"
+                    },
+                    {
+                        "label": "System Status",
+                        "label_short": "SysSt",
+                        "icon": "NONE",
+                        "shortcut": "KC_S",
+                        "type": "display",
+                        "help_text": "View system status information",
+                        "screen_content": "system_status_screen"
+                    }
+                ]
             }
         ]
     }

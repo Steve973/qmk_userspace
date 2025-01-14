@@ -5,7 +5,7 @@ from typing import Any, Dict, Union
 from .models import (
     MenuItem, Operation, PreconditionConfig, InputConfig, ConfirmConfig,
     ResultConfig, PostconditionConfig, ResultMode, InputType, Conditions,
-    ValueRule, RuleGroup, MatchType
+    ValueRule, ValueCompareRule, RuleGroup, MatchType
 )
 
 
@@ -125,7 +125,6 @@ def parse_menu_item(data: Dict, action_names: Set[str], enabled_features: Set[st
     if missing_fields:
         raise ValueError(f"Menu item missing required fields: {', '.join(missing_fields)}\nData: {data}")
 
-
     # Handle conditions.feature_enabled shorthand
     conditions = None
     if "conditions" in data:
@@ -160,6 +159,7 @@ def parse_menu_item(data: Dict, action_names: Set[str], enabled_features: Set[st
         operation=operation,
         conditions=conditions,
         children=children,
+        screen_content=data.get("screen_content"),
         enabled_by=data.get("enabled_by")
     )
 

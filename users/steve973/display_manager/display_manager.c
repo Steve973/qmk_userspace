@@ -283,7 +283,7 @@ screen_push_status_t push_screen(managed_screen_t screen) {
 }
 
 static void free_screen_memory(managed_screen_t* screen) {
-    if (!screen) return;
+    if (!screen || screen->is_const) return;
 
     dprintf("Freeing screen memory for owner: %s\n", screen->owner);
 

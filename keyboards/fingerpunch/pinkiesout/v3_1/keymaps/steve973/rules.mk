@@ -127,9 +127,10 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     SRC += menu/actions/phases/precondition/precondition.c
     SRC += menu/actions/phases/result/result.c
     SRC += menu/actions/lifecycle/operation_lifecycle_manager.c
-
-    # TODO: Change this to multiple menu info display screens
-	SRC += $(KEYMAP_DIR)/menu_modules/system_info.c
+    SRC += $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu_modules/device_info.c
+    SRC += $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu_modules/feature_info.c
+    SRC += $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu_modules/firmware_info.c
+    SRC += $(QMK_USERSPACE)/$(KEYMAP_DIR)/menu_modules/memory_info.c
 
     MENU_TOOL := $(QMK_USER_DIR)/menu/generator/generate_menu.py
     MENU_DATA_FILE := $(INTERMEDIATE_OUTPUT)/menu_data.c

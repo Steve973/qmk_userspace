@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "display_manager/display_manager.h"
 
 #define MAX_MENU_DEPTH 8
 #define ITEMS_PER_PAGE 10
@@ -209,6 +210,9 @@ typedef struct menu_item {
     // Menu hierarchy
     const struct menu_item* const* children;
     uint8_t child_count;
+
+    // Screen item for MENU_TYPE_DISPLAY items
+    const screen_content_t* screen_content;
 
     // Display content
     const display_content_t* display;

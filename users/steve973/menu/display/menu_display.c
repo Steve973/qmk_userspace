@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <progmem.h>
 #include <action.h>
+#include "menu/core/structure/menu_item.h"
 #include "quantum/logging/debug.h"
 #include "display_manager/display_manager.h"
 #include "menu_display.h"
@@ -66,20 +67,33 @@ screen_push_status_t create_menu_screen(const menu_item_t* menu_item, int8_t (*g
     if (!menu_item) {
         dprintf("create_menu_screen: menu_item is NULL\n");
         return SCREEN_PUSH_FAIL_SCREEN_NULL;
-    }
-    if (!menu_item->display) {
+    } else if (menu_item->type == MENU_TYPE_SUBMENU && !menu_item->display) {
         dprintf("create_menu_screen: menu_item->display is NULL\n");
+        return SCREEN_PUSH_FAIL_SCREEN_NULL;
+    } else if (menu_item->type == MENU_TYPE_DISPLAY && !menu_item->screen_content) {
+        dprintf("create_menu_screen: menu_item->screen_content is NULL\n");
         return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     dprintf("Creating menu screen for: %s\n", menu_item->label);
-    screen_content_t* screen = convert_display_content(menu_item->display);
-    screen->get_highlight_index = get_highlight_index;
-    return push_screen((managed_screen_t){
-        .owner = MENU_OWNER,
-        .is_custom = false,
-        .display.content = screen,
-        .refresh_interval_ms = 0
-    });
+    if (menu_item->type == MENU_TYPE_SUBMENU) {
+        screen_content_t* screen = convert_display_content(menu_item->display);
+        screen->get_highlight_index = get_highlight_index;
+        return push_screen((managed_screen_t){
+            .owner = MENU_OWNER,
+            .is_const = false,
+            .is_custom = false,
+            .display.content = screen,
+            .refresh_interval_ms = 0
+        });
+    } else {  // DISPLAY type
+        return push_screen((managed_screen_t){
+            .owner = MENU_OWNER,
+            .is_const = true,
+            .is_custom = false,
+            .display.content = (screen_content_t*)menu_item->screen_content,
+            .refresh_interval_ms = 0
+        });
+    }
 }
 
 screen_push_status_t create_operation_screen(const menu_item_t* item, operation_phase_t phase, const char* owner) {

@@ -211,5 +211,7 @@ static const menu_item_t {{ name }} = {
     }{% else %}{0}{% endif %},
     .children = {% if item.children %}{{ name }}_children{% else %}NULL{% endif %},
     .child_count = {{ child_names|length if item.children else 0 }},
-    .display = {% if menu_display %}&{{ name }}_display{% else %}NULL{% endif %}
+    .display = {% if menu_display %}&{{ name }}_display{% else %}NULL{% endif %},
+    .screen_content = {% if item.screen_content %}&{{ item.screen_content }}{% else %}NULL{% endif %}
+
 };
