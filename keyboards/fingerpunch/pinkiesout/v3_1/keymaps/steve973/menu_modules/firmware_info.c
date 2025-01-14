@@ -1,19 +1,3 @@
-/* Copyright 2024 Sadek Baroudi
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include <stdio.h>
 #include <string.h>
 #include "version.h"
@@ -67,7 +51,7 @@ static screen_element_t firmware_info_elements[] = {
         .content.key_value = {
             .label = "Version",
             .value.get_value = get_firmware_version,
-            .is_dynamic = false
+            .is_dynamic = true
         }
     },
     {
@@ -77,7 +61,7 @@ static screen_element_t firmware_info_elements[] = {
         .content.key_value = {
             .label = "Git Hash",
             .value.get_value = get_git_hash,
-            .is_dynamic = false
+            .is_dynamic = true
         }
     },
     {
@@ -87,7 +71,7 @@ static screen_element_t firmware_info_elements[] = {
         .content.key_value = {
             .label = "Built",
             .value.get_value = get_build_date,
-            .is_dynamic = false
+            .is_dynamic = true
         }
     }
 };
@@ -97,7 +81,12 @@ static screen_element_t firmware_info_elements[] = {
  */
 const screen_content_t firmware_info_screen = {
     .title = "Firmware Info",
+    .title_highlight = HIGHLIGHT_NONE,
     .elements = firmware_info_elements,
-    .element_count = sizeof(firmware_info_elements) / sizeof(firmware_info_elements[0]),
-    .default_y = 2
+    .element_count = 3,
+    .highlight_index = 0,
+    .default_x = 0,
+    .default_y = 2,
+    .center_contents = false,
+    .get_highlight_index = NULL
 };

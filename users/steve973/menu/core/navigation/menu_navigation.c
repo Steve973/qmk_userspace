@@ -60,8 +60,6 @@ bool menu_invoke(void) {
 
     const menu_item_t* selected = current->children[selected_index];
 
-    dprintf("Invoking menu item: %s, type: %d\n", selected->label, selected->type);
-
     switch (selected->type) {
         case MENU_TYPE_ACTION:
             return selected->operation.action ? start_operation(selected) : false;

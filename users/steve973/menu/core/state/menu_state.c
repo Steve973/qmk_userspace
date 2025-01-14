@@ -19,7 +19,7 @@ void init_menu_state(void) {
         .timeout_ms = DEFAULT_TIMEOUT_MS,
         .show_shortcuts = false,
         .history = {
-            .items = { NULL },
+            .items = { [0 ... MAX_MENU_DEPTH-1] = NULL },
             .depth = -1
         }
     };
@@ -91,17 +91,14 @@ bool push_menu_history(const menu_item_t* item) {
     }
 
     // Update menu state by:
-    // 1. Set new current menu item
-    menu_state.current = item;
-    // 2. Reset selected index
-    menu_state.selected_index = 0;
-    // Check if we have only just added the main menu, where the depth would be
-    // -1, and the current item would be NULL, and there is nothing to add to
-    // the history, so we would skip this step.
-    if (menu_state.history.depth >= 0 && menu_state.current) {
-        // 3. Save current menu item to history
+    // 1. Save the current menu item to the history, if we are not adding the main menu
+    if (menu_state.history.depth >= 0) {
         menu_state.history.items[menu_state.history.depth] = menu_state.current;
     }
+    // 2. Set new current menu item
+    menu_state.current = item;
+    // 3. Reset selected index
+    menu_state.selected_index = 0;
     // 4. Increment history depth in all cases
     menu_state.history.depth++;
 

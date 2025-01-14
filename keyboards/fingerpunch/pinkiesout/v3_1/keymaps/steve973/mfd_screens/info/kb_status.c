@@ -139,6 +139,6 @@ static screen_element_t kb_status_elements[] = {
 const screen_content_t kb_status_screen = {
     .title = "Keyboard Status",
     .elements = kb_status_elements,
-    .element_count = sizeof(kb_status_elements) / sizeof(kb_status_elements[0]),
+    .element_count = 4,
     .default_y = 2
 };

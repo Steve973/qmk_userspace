@@ -67,7 +67,7 @@ static screen_element_t memory_info_elements[] = {
         .content.key_value = {
             .label = "Boot Size",
             .value.get_value = get_bootloader_size,
-            .is_dynamic = false
+            .is_dynamic = true
         }
     },
     {
@@ -77,7 +77,7 @@ static screen_element_t memory_info_elements[] = {
         .content.key_value = {
             .label = "FW Size",
             .value.get_value = get_firmware_size,
-            .is_dynamic = false
+            .is_dynamic = true
         }
     },
     {
@@ -87,7 +87,7 @@ static screen_element_t memory_info_elements[] = {
         .content.key_value = {
             .label = "EEPROM",
             .value.get_value = get_eeprom_size,
-            .is_dynamic = false
+            .is_dynamic = true
         }
     }
 };
@@ -97,7 +97,12 @@ static screen_element_t memory_info_elements[] = {
  */
 const screen_content_t memory_info_screen = {
     .title = "Memory Info",
+    .title_highlight = HIGHLIGHT_NONE,
     .elements = memory_info_elements,
-    .element_count = sizeof(memory_info_elements) / sizeof(memory_info_elements[0]),
-    .default_y = 2
+    .element_count = 3,
+    .highlight_index = 0,
+    .default_x = 0,
+    .default_y = 2,
+    .center_contents = false,
+    .get_highlight_index = NULL
 };

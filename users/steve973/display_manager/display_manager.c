@@ -7,7 +7,7 @@
 #include "timer.h"
 
 #define IMG_ORIGIN 0, 0
-#define DISPLAY_BUFFER_SIZE 32
+#define DISPLAY_BUFFER_SIZE 22
 
 static char display_buffer[DISPLAY_BUFFER_SIZE];
 
@@ -285,22 +285,18 @@ screen_push_status_t push_screen(managed_screen_t screen) {
 static void free_screen_memory(managed_screen_t* screen) {
     if (!screen || screen->is_const) return;
 
-    dprintf("Freeing screen memory for owner: %s\n", screen->owner);
-
     if (!screen->is_custom && screen->display.content) {
         screen_content_t* content = screen->display.content;
 
         // We only free the elements array that was dynamically allocated in
         // convert_display_content(), but NOT the text content it points to
         if (content->elements) {
-            dprintf("Freeing elements array at %p\n", (void*)content->elements);
             free(content->elements);
             content->elements = NULL;
         }
 
         // Free the screen_content_t wrapper structure that was allocated
         // in convert_display_content()
-        dprintf("Freeing screen content at %p\n", (void*)content);
         free(content);
         screen->display.content = NULL;
     }

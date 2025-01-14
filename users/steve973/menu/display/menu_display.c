@@ -75,24 +75,27 @@ screen_push_status_t create_menu_screen(const menu_item_t* menu_item, int8_t (*g
         return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
     dprintf("Creating menu screen for: %s\n", menu_item->label);
-    if (menu_item->type == MENU_TYPE_SUBMENU) {
-        screen_content_t* screen = convert_display_content(menu_item->display);
-        screen->get_highlight_index = get_highlight_index;
-        return push_screen((managed_screen_t){
-            .owner = MENU_OWNER,
-            .is_const = false,
-            .is_custom = false,
-            .display.content = screen,
-            .refresh_interval_ms = 0
-        });
-    } else {  // DISPLAY type
-        return push_screen((managed_screen_t){
-            .owner = MENU_OWNER,
-            .is_const = true,
-            .is_custom = false,
-            .display.content = (screen_content_t*)menu_item->screen_content,
-            .refresh_interval_ms = 0
-        });
+    switch (menu_item->type) {
+        case MENU_TYPE_SUBMENU:
+            screen_content_t* screen = convert_display_content(menu_item->display);
+            screen->get_highlight_index = get_highlight_index;
+            return push_screen((managed_screen_t){
+                .owner = owner,
+                .is_const = false,
+                .is_custom = false,
+                .display.content = screen,
+                .refresh_interval_ms = 0
+            });
+        case MENU_TYPE_DISPLAY:
+            return push_screen((managed_screen_t){
+                .owner = owner,
+                .is_const = true,
+                .is_custom = false,
+                .display.content = (screen_content_t*)menu_item->screen_content,
+                .refresh_interval_ms = 0
+            });
+        default:
+            return SCREEN_PUSH_FAIL_SCREEN_NULL;
     }
 }
 

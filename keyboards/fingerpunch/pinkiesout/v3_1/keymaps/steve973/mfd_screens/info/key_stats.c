@@ -159,6 +159,6 @@ static screen_element_t key_stats_elements[] = {
 const screen_content_t key_stats_screen = {
     .title = "Key Stats",
     .elements = key_stats_elements,
-    .element_count = sizeof(key_stats_elements) / sizeof(key_stats_elements[0]),
+    .element_count = 5,
     .default_y = 2
 };

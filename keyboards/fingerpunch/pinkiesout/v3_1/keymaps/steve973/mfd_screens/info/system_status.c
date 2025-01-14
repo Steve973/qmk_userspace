@@ -146,6 +146,6 @@ static screen_element_t system_status_elements[] = {
 const screen_content_t system_status_screen = {
     .title = "System Status",
     .elements = system_status_elements,
-    .element_count = sizeof(system_status_elements) / sizeof(system_status_elements[0]),
+    .element_count = 5,
     .default_y = 2
 };

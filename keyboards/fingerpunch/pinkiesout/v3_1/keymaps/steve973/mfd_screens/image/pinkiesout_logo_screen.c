@@ -37,7 +37,7 @@ static screen_element_t po_logo_elements[] = {
 const screen_content_t po_logo_screen = {
     .title = NULL,
     .elements = po_logo_elements,
-    .element_count = sizeof(po_logo_elements) / sizeof(po_logo_elements[0]),
+    .element_count = 1,
     .default_y = 0
 };
 #endif

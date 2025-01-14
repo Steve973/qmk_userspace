@@ -14,7 +14,7 @@
 ## Overview
 
 ### Purpose
-The QMK JSON Menu system provides a declarative way to define OLED-based menus
+This QMK JSON Menu system provides a declarative way to define OLED-based menus
 for keyboard configuration, control, and status. By separating menu structure
 and behavior from its implementation, it enables flexible and maintainable menu
 creation that requires only minimal addition of c code, and it reduces nearly
