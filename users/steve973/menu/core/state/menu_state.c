@@ -38,9 +38,6 @@ nav_context_t get_current_context(void) {
         // Return context based on current operation phase
         operation_phase_t phase = get_current_operation_phase();
         switch (phase) {
-            case OPERATION_PHASE_NONE:
-                dprintln("WARNING: Should not be determining operation phase for operation phase NONE");
-                return NAV_CONTEXT_MENU;
             case OPERATION_PHASE_PRECONDITION:
                 return NAV_CONTEXT_PRECONDITION;
             case OPERATION_PHASE_INPUT:
@@ -53,12 +50,11 @@ nav_context_t get_current_context(void) {
                 return NAV_CONTEXT_RESULT;
             case OPERATION_PHASE_POSTCONDITION:
                 return NAV_CONTEXT_POSTCONDITION;
+            case OPERATION_PHASE_NONE:
             case OPERATION_PHASE_COMPLETE:
-                dprintln("WARNING: Should not be determining operation phase for operation phase COMPLETE");
-                return NAV_CONTEXT_MENU;
             default:
-                dprintf("Invalid operation phase: %d\n", phase);
-                return NAV_CONTEXT_INVALID;
+                dprintf("WARNING: Should not be determining operation phase for operation phase: %d\n", phase);
+                return NAV_CONTEXT_MENU;
         }
     }
 
@@ -91,7 +87,7 @@ bool push_menu_history(const menu_item_t* item) {
     }
 
     // Update menu state by:
-    // 1. Save the current menu item to the history, if we are not adding the main menu
+    // 1. If not adding main menu (depth = -1), add current to history
     if (menu_state.history.depth >= 0) {
         menu_state.history.items[menu_state.history.depth] = menu_state.current;
     }
