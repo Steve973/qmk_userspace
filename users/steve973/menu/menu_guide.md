@@ -9,7 +9,6 @@
 * [Menu Options](#menu-options)
 * [Variable Substitution](#variable-substitution)
 * [Examples](#examples)
-* [Implementation Notes](#implementation-notes)
 
 ## Overview
 
@@ -66,6 +65,136 @@ your needs.
 The menu system starts with a root menu containing child items. Each item defines
 its display properties, behavior, and optional operation details like input
 handling and result display.
+
+## Integration With the QMK Build
+
+The menu system is designed to be modular and integrates directly with QMK's build 
+system. This section explains how to organize menu modules and how the build system 
+processes them.
+
+### Module Organization
+
+Menu modules are most commonly placed in two locations:
+1. In your keymap directory at `<keymap_dir>/menu_modules/`
+   - Generally for user-defined menu modules
+2. In your QMK userspace at `$(QMK_USER_DIR)/menu/modules/`
+   - Generally for built-in menu modules that work regardless of keyboard specifics
+
+> Note: `QMK_USER_DIR` refers to your QMK userspace user directory, typically 
+> `$(QMK_USERSPACE)/users/<your_username>`.
+
+Each menu module must contain exactly three files:
+- A JSON file defining the menu structure
+- A header file (`.h`) declaring the menu actions
+- A C source file (`.c`) implementing the actions
+
+For example, a "system_info" module would look like:
+
+```txt
+<keymap_dir>/menu_modules/system_info/
+├── system_info.json
+├── system_info.h
+└── system_info.c
+```
+
+### Build Configuration
+
+To include menu modules in your build, add their parent directories to your rules.mk:
+
+```makefile
+# Add your module parent directories
+MENU_MODULE_PARENT_DIRS += $(QMK_USER_DIR)/menu/modules
+MENU_MODULE_PARENT_DIRS += $(KEYMAP_DIR)/menu_modules
+```
+
+### Generated Artifacts
+
+During the build process, two main artifacts are generated to support the menu
+system.
+
+#### Menu Structure Visualization
+
+The build generates a menu structure visualization in 
+`menu/core/generated/menu_structure.txt`. This provides a hierarchical view of your 
+complete menu system, and includes some important information about the menu items:
+
+```
+Menu Structure:
+└── Main Menu
+[S] ├── System
+[A] │   ├── Bootloader
+[S] │   └── System Info
+[D] │       ├── Device Info
+[D] │       ├── Features
+[D] │       └── Memory Info      
+```
+
+The visualization uses prefixes to indicate item types:
+- `[S]` - Submenu: A menu that contains other items
+- `[A]` - Action: A menu item that performs an action
+- `[D]` - Display: A menu item that shows information
+
+Feature-dependent items show their required feature flag in brackets:
+
+```
+[A] ├── Piezo Test                  [AUDIO_ENABLE]
+[S] └── RGB Matrix                  [RGB_MATRIX_ENABLE]
+```
+
+This visualization is useful for:
+- Verifying menu structure during development
+- Understanding feature dependencies
+- Documenting the complete menu hierarchy
+
+The visualization is automatically generated when you build your firmware, and it 
+reflects the current state of all enabled menu modules and features.
+
+#### Menu Actin Lookup Information
+
+The build system also generates an action lookup table in 
+`menu/core/generated/menu_action_lookup.c`. This file maps menu actions defined in 
+your JSON files to their corresponding C function implementations.
+
+The generator:
+1. Scans all module JSON files for action definitions
+2. Matches these with function declarations in the module header files
+3. Creates a lookup table that the menu system uses at runtime
+4. Validates that all declared actions have implementations
+5. Only includes actions for enabled features
+
+The generator matches the "action" field in your JSON definitions to functions in 
+your C code. For example, if your JSON defines an action:
+
+```json
+{
+    "label": "Example Item",
+    "shortcut": "KC_E",
+    "type": "action",
+    "help_text": "Example menu item description",
+    "operation": {
+        "action": "example_action", <-- HERE!
+        "input": [{
+            "type": "options",
+            "options": ["A", "B", "C"]
+        }],
+        "result": {
+            "message": "Selected: {value}",
+            "mode": "timed",
+            "timeout_sec": 1
+        }
+    }
+}
+```
+
+The generator will look for a matching function declaration in your module's header:
+
+```c
+operation_result_t example_action(operation_result_t prev_result, void** input_values);
+```
+
+This automatic linking ensures that:
+- All menu actions are properly connected to their implementations
+- Build errors occur if any specified actions are missing implementations
 
 ## Core Menu Item Properties
 
@@ -160,67 +289,111 @@ gathering, confirmation dialogs, and result display.
 
 #### Implementing Action Handlers
 Action handlers must be C functions that match the operation handler signature and
-must be discoverable by the build system. The menu system uses a Python script
-during build to generate action lookup tables.
+must be included in your menu module's implementation file. The menu system uses 
+Python scripts during build to generate action lookup tables based on your module 
+structure.
 
 To implement custom actions:
 
-1. Create C files containing your action handlers:
-```c
-operation_result_t my_custom_action(operation_result_t prev_result, void** input_values) {
-    // Implementation here...
-    return OPERATION_RESULT_SUCCESS;
-}
-```
+1. Create your menu module with the required files:
+    ```
+    your_module/
+    ├── your_module.json    # Menu structure and action definitions
+    ├── your_module.h       # Action function declarations
+    └── your_module.c       # Action implementations
+    ```
 
-2. Configure `rules.mk` to find your action implementations:
-```make
-# Specify directories containing action implementations
-MENU_ACTION_LOCATIONS += $(KEYMAP_DIR)/menu/actions
-```
+2. Implement your action handler in the module's C file:
+    ```c
+    operation_result_t my_custom_action(operation_result_t prev_result, void** input_values) {
+        // Implementation here...
+        return OPERATION_RESULT_SUCCESS;
+    }
+    ```
+
+3. Add your module to the build system in your rules.mk. You can either:
+   - Add a parent directory containing multiple modules:
+     ```make
+     MENU_MODULE_PARENT_DIRS += $(QMK_USER_DIR)/menu/modules
+     ```
+   - Or add a specific module directory directly:
+     ```make
+     MENU_MODULE_DIRS += $(QMK_USER_DIR)/menu/modules/your_module
+     ```
 
 The build system will:
-- Scan specified locations for .c files
+- Find all menu modules in the configured directories
 - Generate lookup tables mapping JSON action names to functions
 - Include the implementations in the final binary
 
 Action function names in your JSON must exactly match the C function names.
 
-### Submenus 
-These are "container" items that hold other menu items. They are used to create
-hierarchical menu structures. I.e., this is how you define submenus.
-
-```json
-{
-    "label": "RGB Settings",
-    "type": "submenu",
-    "help_text": "Configure RGB matrix settings",
-    "children": [
-        {
-            "label": "Toggle RGB",
-            "type": "action",
-            "operation": {
-                "action": "toggle_rgb"
-            }
-        }
-    ]
-}
-```
-
 ### Display Items
-These are menu items that show information without taking action. They are useful
-for status displays and information pages.
+
+These are menu items that show formatted information using the display manager's 
+screen content system. They support multiple display elements, layout control, and 
+both static and dynamic content.  With the display type, you can show information
+without providing the user a way to take action with the items.
 
 ```json
 {
-    "label": "System Info",
+    "label": "Device Info",
+    "label_short": "DevInf",
+    "icon": "NONE",
+    "shortcut": "KC_D",
     "type": "display",
-    "help_text": "View system configuration",
-    "operation": {
-        "action": "show_system_info"
-    }
+    "help_text": "View device hardware information",
+    "screen_content": "device_info_screen"
 }
 ```
+
+Note that the "type" is listed as "display", which is the key portion, here, that
+goes along with the "screen_content" value of "device_info_screen".  An
+explanation of how the screen content is configured follows.
+
+A display item's implementation consists of defining screen elements and a screen 
+content structure. For example:
+
+    ```c
+    // Define individual display elements
+    static screen_element_t device_info_elements[] = {
+        {
+            .type = CONTENT_TYPE_KEY_VALUE,
+            .x = 0,
+            .y = 0,
+            .content.key_value = {
+                .label = "Manufacturer",
+                .value.static_value = MANUFACTURER,
+                .is_dynamic = false
+            }
+        },
+        // ... more elements as needed ...
+    };
+
+    // Define the complete screen content
+    const screen_content_t device_info_screen = {
+        .title = "Device Info",
+        .title_highlight = HIGHLIGHT_NONE,
+        .elements = device_info_elements,
+        .element_count = 7,
+        .highlight_index = 0,
+        .default_x = 0,
+        .default_y = 2,
+        .center_contents = false,
+        .get_highlight_index = NULL
+    };
+    ```
+
+Display screens support:
+- Multiple content elements with different types
+- Positioning control (x, y coordinates)
+- Static and dynamic content
+- Title configuration
+- Content centering
+
+Though display screens share the `screen_content_t` type, and also have the
+elements that configure highlighting, these displays do not provide the
+option to hightlight the items.
 
 ## Operation Lifecycle
 
