@@ -74,10 +74,9 @@ def main():
     enabled_features = set()
     with open(args.defines) as f:
         for line in f:
-            if '=' in line:
-                feature, value = line.strip().split('=', 1)
-                if value.strip() == 'yes':
-                    enabled_features.add(feature.strip())
+            feature = line.strip()
+            if feature:  # ignore empty lines
+                enabled_features.add(feature)
 
     # Get action names from menu config
     json_paths = [Path(p) for p in args.json]

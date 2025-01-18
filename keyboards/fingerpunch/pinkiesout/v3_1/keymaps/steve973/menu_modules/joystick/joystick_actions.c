@@ -48,7 +48,10 @@ operation_result_t detect_orientation(operation_result_t prev_result, void** inp
                 joystick_config.up_orientation = up_direction;
                 fp_kb_config_user.js_config = joystick_config;
                 fp_kb_config_save();
+                return OPERATION_RESULT_SUCCESS;
             }
+        } else {
+            return OPERATION_RESULT_TIMEOUT;
         }
     }
     return prev_result;

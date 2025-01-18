@@ -1,0 +1,177 @@
+{
+    "name": "Menu System Custom UI",
+    "menus": [
+      {
+        "label": "Main Menu",
+        "content": [
+          // RGB submenu - This translates well since VIA has good RGB support
+          {
+            "label": "RGB Matrix",
+            "content": [
+              {
+                "label": "Toggle RGB",
+                "type": "button"
+              },
+              {
+                "label": "Mode",
+                "type": "dropdown",
+                "options": [
+                  "Static",
+                  "Breathing",
+                  "Rainbow",
+                  "Swirl",
+                  "Snake",
+                  "Knight",
+                  "Christmas",
+                  "Static Gradient",
+                  "RGB Test",
+                  "Alternating",
+                  "Typing Heatmap"
+                ]
+              },
+              {
+                "label": "Hue",
+                "type": "range",
+                "min": 0,
+                "max": 255
+              },
+              {
+                "label": "Saturation",
+                "type": "range",
+                "min": 0,
+                "max": 255
+              },
+              {
+                "label": "Value",
+                "type": "range",
+                "min": 0,
+                "max": 255
+              },
+              {
+                "label": "Speed",
+                "type": "range",
+                "min": 0,
+                "max": 255
+              }
+            ]
+          },
+
+          // Joystick submenu - Most of this can translate except calibration
+          {
+            "label": "Joystick",
+            "content": [
+              // Can't translate calibration as it needs user interaction
+              // Neutral/Range calibration omitted
+              {
+                "label": "Mode",
+                "type": "dropdown",
+                "options": [
+                  "Arrows",
+                  "WASD",
+                  "Mouse",
+                  "Analog"
+                ]
+              },
+              {
+                "label": "Orientation",
+                "type": "dropdown",
+                "options": [
+                  "Normal",
+                  "Flipped"
+                ]
+              },
+              {
+                "label": "Sensitivity",
+                "content": [
+                  {
+                    "label": "X Axis",
+                    "type": "range",
+                    "min": 1,
+                    "max": 100
+                  },
+                  {
+                    "label": "Y Axis",
+                    "type": "range",
+                    "min": 1,
+                    "max": 100
+                  }
+                ]
+              }
+            ]
+          },
+
+          // Menu Options - Some can translate as settings
+          {
+            "label": "Menu Options",
+            "content": [
+              {
+                "label": "Navigation",
+                "content": [
+                  {
+                    "label": "Selection Style",
+                    "type": "dropdown",
+                    "options": [
+                      "Highlight",
+                      "Arrow",
+                      "Star"
+                    ]
+                  },
+                  {
+                    "label": "WASD Keys",
+                    "type": "button"
+                  },
+                  {
+                    "label": "Shortcut Mode",
+                    "type": "dropdown",
+                    "options": [
+                      "Direct",
+                      "Select"
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "Default Timeouts",
+                "content": [
+                  {
+                    "label": "Menu Timeout",
+                    "type": "range",
+                    "min": 5,
+                    "max": 120
+                  },
+                  {
+                    "label": "Result Display",
+                    "type": "range",
+                    "min": 1,
+                    "max": 10
+                  },
+                  {
+                    "label": "Confirmation",
+                    "type": "range",
+                    "min": 10,
+                    "max": 60
+                  }
+                ]
+              }
+            ]
+          },
+
+          // System submenu - Basic actions can translate
+          {
+            "label": "System",
+            "content": [
+              {
+                "label": "Bootloader",
+                "type": "button"
+              },
+              {
+                "label": "Reset EEPROM",
+                "type": "button"
+              },
+              // Display items (system info, etc.) can't translate as VIA handles these differently
+            ]
+          }
+        ]
+      }
+    ]
+  }

@@ -1,0 +1,422 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "main_menu": {
+            "$ref": "#/definitions/menuItem"
+        }
+    },
+    "required": [
+        "main_menu"
+    ],
+    "definitions": {
+        "menuItem": {
+            "type": "object",
+            "required": [
+                "label",
+                "type"
+            ],
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "label_short": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "shortcut": {
+                    "type": "string"
+                },
+                "help_text": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "action",
+                        "submenu",
+                        "display"
+                    ]
+                },
+                "operation": {
+                    "$ref": "#/definitions/operation"
+                },
+                "conditions": {
+                    "$ref": "#/definitions/conditions"
+                },
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/menuItem"
+                    }
+                },
+                "screen_content": {
+                    "$ref": "#/definitions/screenContent"
+                },
+                "display": {
+                    "$ref": "#/definitions/displayContent"
+                }
+            }
+        },
+        "operation": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "precondition": {
+                    "type": "object",
+                    "properties": {
+                        "handler": {
+                            "type": "string"
+                        },
+                        "message": {
+                            "type": "string"
+                        },
+                        "args": {
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "handler"
+                    ]
+                },
+                "input": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "type"
+                        ],
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "range",
+                                    "options",
+                                    "custom"
+                                ]
+                            },
+                            "prompt": {
+                                "type": "string"
+                            },
+                            "default": {
+                                "type": "string"
+                            },
+                            "wrap": {
+                                "type": "boolean"
+                            },
+                            "live_preview": {
+                                "type": "boolean"
+                            },
+                            "range": {
+                                "type": "string",
+                                "pattern": "^\\d+\\.\\.\\d+:\\d+$"
+                            },
+                            "options": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "handler": {
+                                "type": "string"
+                            },
+                            "args": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "confirm": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "string"
+                        },
+                        "timeout_sec": {
+                            "type": "integer"
+                        },
+                        "true_text": {
+                            "type": "string"
+                        },
+                        "false_text": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "message"
+                    ]
+                },
+                "result": {
+                    "type": "object",
+                    "properties": {
+                        "message": {
+                            "type": "string"
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": [
+                                "timed",
+                                "acknowledge"
+                            ]
+                        },
+                        "timeout_sec": {
+                            "type": "integer"
+                        },
+                        "ok_text": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "message",
+                        "mode"
+                    ]
+                },
+                "postcondition": {
+                    "type": "object",
+                    "properties": {
+                        "handler": {
+                            "type": "string"
+                        },
+                        "message": {
+                            "type": "string"
+                        },
+                        "args": {
+                            "type": "object"
+                        }
+                    },
+                    "required": [
+                        "handler"
+                    ]
+                }
+            },
+            "required": [
+                "action"
+            ]
+        },
+        "conditions": {
+            "type": "object",
+            "properties": {
+                "match": {
+                    "type": "string",
+                    "enum": [
+                        "all",
+                        "any"
+                    ]
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "value_equals"
+                                    },
+                                    "variable": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "type",
+                                    "variable",
+                                    "value"
+                                ]
+                            },
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "value_compare"
+                                    },
+                                    "variable": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "type": "string"
+                                    },
+                                    "operator": {
+                                        "type": "string",
+                                        "enum": [
+                                            "equals",
+                                            "not_equals",
+                                            "greater_than",
+                                            "less_than",
+                                            "greater_equals",
+                                            "less_equals"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "type",
+                                    "variable",
+                                    "value",
+                                    "operator"
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "match",
+                "rules"
+            ]
+        },
+        "screenContent": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "title_highlight": {
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "full",
+                        "partial"
+                    ]
+                },
+                "elements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/screenElement"
+                    }
+                },
+                "element_count": {
+                    "type": "integer"
+                },
+                "highlight_index": {
+                    "type": "integer"
+                },
+                "default_x": {
+                    "type": "integer"
+                },
+                "default_y": {
+                    "type": "integer"
+                },
+                "center_contents": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "title",
+                "elements",
+                "element_count"
+            ]
+        },
+        "screenElement": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "content_type_key_value"
+                    ]
+                },
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "object",
+                    "properties": {
+                        "key_value": {
+                            "type": "object",
+                            "properties": {
+                                "label": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "oneOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "static_value": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "dynamic_value": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "is_dynamic": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": [
+                                "label",
+                                "value",
+                                "is_dynamic"
+                            ]
+                        }
+                    }
+                }
+            },
+            "required": [
+                "type",
+                "x",
+                "y",
+                "content"
+            ]
+        },
+        "displayContent": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "elements": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "message",
+                                    "input",
+                                    "selection",
+                                    "list"
+                                ]
+                            },
+                            "text": {
+                                "type": "string"
+                            },
+                            "is_selectable": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "type",
+                            "text"
+                        ]
+                    }
+                },
+                "element_count": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "title",
+                "elements",
+                "element_count"
+            ]
+        }
+    }
+}

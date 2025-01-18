@@ -30,6 +30,11 @@ phase_result_t confirmation_init(operation_context_t* operation_state) {
 }
 
 phase_result_t confirmation_input(operation_context_t* operation_state) {
+    // TODO: need to have a way to determine if any choice has been made, or if
+    //       the confirmation has timed out.  In those cases, we need to return
+    //       CONTINUE.  If a choice has been made, then it can be checked and
+    //       return ADVANCE or CANCEL. Otherwise, it is not waiting for the user
+    //       to make a choice and advances right away.
     if (operation_state->result == OPERATION_RESULT_CANCELLED || operation_state->result == OPERATION_RESULT_ERROR) {
         dprintln("Confirmation input failed -- cancelling");
         return PHASE_RESULT_CANCEL;
@@ -41,6 +46,7 @@ phase_result_t confirmation_input(operation_context_t* operation_state) {
 }
 
 phase_result_t confirmation_processing(operation_context_t* operation_state) {
+    dprintf("Confirmation processing: %d\n", operation_state->choice_made);
     if (operation_state->choice_made == 0) {
         operation_state->result = OPERATION_RESULT_SUCCESS;
         dprintln("Confirmation processing passed -- advancing");

@@ -113,6 +113,7 @@ endif
 
 # Menu sources
 ifeq ($(strip $(MENU_ENABLE)), yes)
+    SRC += $(QMK_USER_DIR)/utils/rgb_utils.c
     SRC += menu/core/base/menu_core.c
     SRC += menu/core/navigation/input_handler.c
     SRC += menu/core/navigation/menu_navigation.c
@@ -145,19 +146,21 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     MENU_MODULE_PARENT_DIRS += $(QMK_USER_DIR)/menu/modules
     # Load all module directories from the parent directories into MENU_MODULES_DIRS
     MENU_MODULE_DIRS ?=
-    MENU_MODULE_DIRS += $(foreach parent,$(MENU_MODULE_PARENT_DIRS),$(wildcard $(parent)/*))
+    MENU_MODULE_DIRS += $(foreach parent,$(MENU_MODULE_PARENT_DIRS),$(dir $(wildcard $(parent)/*/)))
 
-    # Verify each dir has exactly one of each json/h/c file
+    # Start with empty collections
+    MENU_JSON_FILES :=
+    MENU_ACTION_HEADERS :=
+    MENU_ACTION_SOURCES :=
+
+    # For each potential module directory
     $(foreach dir,$(MENU_MODULE_DIRS),\
-        $(if $(word 2,$(wildcard $(dir)/*.json)),$(error Multiple JSON files in $(dir)),)\
-        $(if $(word 2,$(wildcard $(dir)/*.c)),$(error Multiple C files in $(dir)),)\
-        $(if $(word 2,$(wildcard $(dir)/*.h)),$(error Multiple H files in $(dir)),)\
+        $(if $(and $(wildcard $(dir)/*.json),$(wildcard $(dir)/*.h),$(wildcard $(dir)/*.c)),\
+            $(eval MENU_JSON_FILES += $(wildcard $(dir)/*.json))\
+            $(eval MENU_ACTION_HEADERS += $(wildcard $(dir)/*.h))\
+            $(eval MENU_ACTION_SOURCES += $(wildcard $(dir)/*.c))\
+        )\
     )
-
-    # For each module dir, find the json/h/c file triplet
-    MENU_JSON_FILES := $(foreach dir,$(MENU_MODULE_DIRS),$(wildcard $(dir)/*.json))
-    MENU_ACTION_HEADERS := $(foreach dir,$(MENU_MODULE_DIRS),$(wildcard $(dir)/*.h))
-    MENU_ACTION_SOURCES := $(foreach dir,$(MENU_MODULE_DIRS),$(wildcard $(dir)/*.c))
 
     # Add sources to build
     SRC += $(MENU_ACTION_SOURCES)
@@ -166,7 +169,11 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
     MENU_DEFINES_FILE := $(INTERMEDIATE_OUTPUT)/menu_defines.txt
     $(MENU_DEFINES_FILE):
 		@mkdir -p $(dir $@)
-		@echo "$(foreach def,$(OPT_DEFS),$(if $(and $(findstring _ENABLE,$(def)),$(findstring -D,$(def))),$(patsubst -D%,%,$(def))))" > $@
+		@$(foreach def,$(OPT_DEFS),\
+            $(if $(and $(findstring _ENABLE,$(def)),$(findstring -D,$(def))),\
+                echo "$(patsubst -D%,%,$(def))" >> $@;\
+            )\
+    )
 
     $(MENU_DATA_FILE): $(MENU_JSON_FILES) $(MENU_TOOL) $(MENU_DEFINES_FILE)
 		python3 $(MENU_TOOL) $@ $(MENU_STRUCTURE_FILE) $(MENU_DEFINES_FILE) $(MENU_JSON_FILES)
@@ -175,7 +182,7 @@ ifeq ($(strip $(MENU_ENABLE)), yes)
 
     # Only set up action lookup generation if we found files
     ifneq ($(strip $(MENU_ACTION_SOURCES)),)
-        $(INTERMEDIATE_OUTPUT)/menu/core/base/menu_core.o: $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c
+        $(INTERMEDIATE_OUTPUT)/menu/core/base/menu_core.o: $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c $(QMK_USER_DIR)/utils/rgb_utils.c
         MENU_ACTION_GENERATOR := $(QMK_USER_DIR)/menu/generator/generate_action_lookup.py
         $(MENU_GENERATED_FILES_DIR)/menu_action_lookup.c: $(MENU_JSON_FILES) $(MENU_ACTION_GENERATOR) $(MENU_ACTION_SOURCES) $(MENU_DATA_FILE) $(MENU_DEFINES_FILE)
 		    python3 $(MENU_ACTION_GENERATOR) --json $(MENU_JSON_FILES) --output $@ --defines $(MENU_DEFINES_FILE) $(MENU_ACTION_SOURCES)
