@@ -40,34 +40,43 @@ class InputConfig:
     options: Optional[List[str]] = None
     options_conditions: Optional[dict] = None
     display_values: Optional[List[str]] = None
+    title: str = "Input"
+    timeout_sec: int = 5
 
 @dataclass
 class ConfirmConfig:
     message: str
-    timeout_sec: int
+    title: str = "Confirm"
     default: bool = True
-    true_text: str = "Yes"
-    false_text: str = "No"
+    true_text: str = "OK"
+    false_text: str = "Cancel"
+    timeout_sec: int = 5
 
 @dataclass
 class ResultConfig:
     message: str
     mode: ResultMode
-    timeout_sec: Optional[int] = None
-    ok_text: Optional[str] = None
-
+    title: str = "Result"
+    ok_text: str = "OK"
+    timeout_sec: int = 5
 
 @dataclass
 class PreconditionConfig:
     handler: str
     message: str
     args: Optional[dict] = None
+    title: str = "Precondition"
+    ok_text: str = "OK"
+    timeout_sec: int = 5
 
 @dataclass
 class PostconditionConfig:
     handler: str
     message: str
     args: Optional[dict] = None
+    title: str = "Postcondition"
+    ok_text: str = "OK"
+    timeout_sec: int = 5
 
 @dataclass
 class Operation:
@@ -81,12 +90,17 @@ class Operation:
     def get_display_content(self, phase: str) -> DisplayContent:
         if phase == "precondition" and self.precondition:
             return DisplayContent(
-                title=self.action,
+                title=self.precondition.title,
                 elements=[
                     DisplayElement(
                         type=DisplayElementType.MESSAGE,
-                        text=self.precondition.message,
+                        text=self.precondition.message or "Precondition failed",
                         is_selectable=False
+                    ),
+                    DisplayElement(
+                        type=DisplayElementType.SELECTION,
+                        text=self.precondition.ok_text,
+                        is_selectable=True
                     )
                 ]
             )
@@ -106,13 +120,13 @@ class Operation:
                     is_selectable=True
                 ))
             return DisplayContent(
-                title=self.action,
+                title=self.inputs[0].title,
                 elements=elements
             )
 
         elif phase == "confirm" and self.confirm:
             return DisplayContent(
-                title=self.action,
+                title=self.confirm.title,
                 elements=[
                     DisplayElement(
                         type=DisplayElementType.MESSAGE,
@@ -133,9 +147,8 @@ class Operation:
             )
 
         elif phase == "action":
-            # Action phase might show progress or status
             return DisplayContent(
-                title=self.action,
+                title="Action",
                 elements=[
                     DisplayElement(
                         type=DisplayElementType.MESSAGE,
@@ -146,32 +159,35 @@ class Operation:
             )
 
         elif phase == "result" and self.result:
-            elements = [
-                DisplayElement(
-                    type=DisplayElementType.MESSAGE,
-                    text=self.result.message,
-                    is_selectable=False
-                )
-            ]
-            if self.result.mode == ResultMode.ACKNOWLEDGE:
-                elements.append(DisplayElement(
-                    type=DisplayElementType.SELECTION,
-                    text=self.result.ok_text or "OK",
-                    is_selectable=True
-                ))
             return DisplayContent(
-                title=self.action,
-                elements=elements
+                title=self.result.title,
+                elements=[
+                    DisplayElement(
+                        type=DisplayElementType.MESSAGE,
+                        text=self.result.message,
+                        is_selectable=False
+                    ),
+                    DisplayElement(
+                        type=DisplayElementType.SELECTION,
+                        text=self.result.ok_text,
+                        is_selectable=True
+                    )
+                ]
             )
 
         elif phase == "postcondition" and self.postcondition:
             return DisplayContent(
-                title=self.action,
+                title=self.postcondition.title,
                 elements=[
                     DisplayElement(
                         type=DisplayElementType.MESSAGE,
                         text=self.postcondition.message,
                         is_selectable=False
+                    ),
+                    DisplayElement(
+                        type=DisplayElementType.SELECTION,
+                        text=self.postcondition.ok_text,
+                        is_selectable=True
                     )
                 ]
             )

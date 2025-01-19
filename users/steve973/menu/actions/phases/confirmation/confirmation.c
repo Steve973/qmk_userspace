@@ -23,23 +23,27 @@ phase_result_t confirmation_init(operation_context_t* operation_state) {
         return PHASE_RESULT_CANCEL;
     }
 
-    create_operation_screen(operation_state->item, OPERATION_PHASE_CONFIRMATION, CONFIRMATION_OWNER);
+    screen_push_status_t push_status = create_operation_screen(operation_state->item, OPERATION_PHASE_CONFIRMATION, CONFIRMATION_OWNER);
+
+    if (push_status != SCREEN_PUSH_SUCCESS) {
+        operation_state->result = OPERATION_RESULT_ERROR;
+        dprintf("Confirmation init failed from screen push! [%d] -- cancelling\r\n", push_status);
+        return PHASE_RESULT_CANCEL;
+    }
 
     dprintln("Confirmation init passed -- advancing");
     return PHASE_RESULT_ADVANCE;
 }
 
 phase_result_t confirmation_input(operation_context_t* operation_state) {
-    // TODO: need to have a way to determine if any choice has been made, or if
-    //       the confirmation has timed out.  In those cases, we need to return
-    //       CONTINUE.  If a choice has been made, then it can be checked and
-    //       return ADVANCE or CANCEL. Otherwise, it is not waiting for the user
-    //       to make a choice and advances right away.
     if (operation_state->result == OPERATION_RESULT_CANCELLED || operation_state->result == OPERATION_RESULT_ERROR) {
         dprintln("Confirmation input failed -- cancelling");
         return PHASE_RESULT_CANCEL;
     } else if (operation_state->choice_made > -1) {
         remove_menu_screen(CONFIRMATION_OWNER);
+    } else {
+        dprintln("Confirmation input not yet made -- continuing");
+        return PHASE_RESULT_CONTINUE;
     }
     dprintln("Confirmation input passed -- advancing");
     return PHASE_RESULT_ADVANCE;

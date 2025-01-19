@@ -77,7 +77,7 @@ bool exit_menu_mode(void) {
 
     // Clean up any active operation
     if (is_operation_in_progress()) {
-        cancel_operation();
+        cancel_operation(false);
     }
 
     // Clear all menu screens

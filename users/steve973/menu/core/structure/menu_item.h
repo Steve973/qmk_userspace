@@ -50,16 +50,6 @@ typedef enum {
     INPUT_TYPE_CUSTOM
 } input_type_t;
 
-/**
- * Result Display Modes
- * TIMED:       Show result for specified duration
- * ACKNOWLEDGE: Wait for user confirmation
- */
-typedef enum {
-    RESULT_MODE_TIMED,
-    RESULT_MODE_ACKNOWLEDGE
-} result_mode_t;
-
 typedef enum {
     DISPLAY_TYPE_MESSAGE,
     DISPLAY_TYPE_INPUT,
@@ -91,14 +81,32 @@ typedef struct {
     uint8_t element_count;
 } display_content_t;
 
-typedef struct precondition_config {
-    const char* handler;    // Function name to execute
+typedef struct {
+    const char* title;
     const char* message;
+    uint8_t timeout_sec;
+} display_base_config_t;
+
+typedef union {
+    struct {
+        const char* ok_text;
+    };
+    struct {
+        const char* true_text;
+        const char* false_text;
+    };
+} display_buttons_t;
+
+typedef struct precondition_config {
+    const display_base_config_t base_config;
+    const display_buttons_t button;
+    const char* handler;    // Function name to execute
     void* args;             // Handler-specific configuration
 } precondition_config_t;
 
 typedef struct input_config {
     input_type_t type;
+    const char* title;
     const char* prompt;     // User prompt text
     const char* default_val;
     bool wrap;              // Wrap around at min/max
@@ -120,25 +128,22 @@ typedef struct input_config {
             void* data;             // Handler-specific configuration
         } custom;
     } data;
-} input_config_t;            // Changed from input to inputs
+} input_config_t;
 
 typedef struct confirm_config {
-    const char* message;
-    uint8_t timeout_sec;
-    const char* true_text;   // Confirmation button text
-    const char* false_text;  // Cancel button text
+    const display_base_config_t base_config;
+    const display_buttons_t buttons;
 } confirm_config_t;
 
 typedef struct result_config {
-    const char* message;
-    result_mode_t mode;
-    uint8_t timeout_sec;
-    const char* ok_text;
+    const display_base_config_t base_config;
+    const display_buttons_t button;
 } result_config_t;
 
 typedef struct postcondition_config {
+    const display_base_config_t base_config;
+    const display_buttons_t button;
     const char* handler;    // Function name to execute
-    const char* message;
     void* args;             // Handler-specific configuration
 } postcondition_config_t;
 

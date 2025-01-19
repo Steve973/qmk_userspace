@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "menu/core/state/menu_state.h"
 #include "quantum/logging/debug.h"
 #include "menu_operation.h"
 #include "../../actions/phases/precondition/precondition.h"
@@ -40,20 +41,13 @@ static void handle_phase_result(operation_context_t* context, phase_result_t res
             advance_phase_state(context);
             break;
         case PHASE_RESULT_COMPLETE:
-            complete_phase_state(context);
-            // If phase is complete, advance to next operation phase
-            if (context->phase_state == PHASE_STATE_COMPLETE) {
-                advance_operation_phase(context);
-            }
+            advance_phase_state(context);
             break;
         case PHASE_RESULT_CANCEL:
-            set_phase_state(context, PHASE_STATE_CANCELLED);
-            set_operation_phase(context, OPERATION_PHASE_COMPLETE);
+            cancel_operation(false);
             break;
         case PHASE_RESULT_ERROR:
-            context->result = OPERATION_RESULT_ERROR;
-            set_phase_state(context, PHASE_STATE_CANCELLED);
-            set_operation_phase(context, OPERATION_PHASE_COMPLETE);
+            cancel_operation(true);
             break;
     }
 }
@@ -141,6 +135,11 @@ void execute_operation(void) {
     handle_phase_result(&operation_state, phase_result);
 }
 
+bool set_operation_selection(int8_t selection) {
+    operation_state.choice_made = selection;
+    return true;
+}
+
 operation_phase_t get_current_operation_phase(void) {
     return operation_state.current_phase;
 }
@@ -150,8 +149,10 @@ bool is_operation_in_progress(void) {
            operation_state.current_phase != OPERATION_PHASE_COMPLETE;
 }
 
-bool cancel_operation(void) {
-    dprintln("Cancelling operation");
+bool cancel_operation(bool is_error) {
+    dprintf("Cancelling operation%s\n", is_error ? " due to error" : "");
+    operation_state.result = is_error ? OPERATION_RESULT_ERROR : OPERATION_RESULT_CANCELLED;
     set_phase_state(&operation_state, PHASE_STATE_CANCELLED);
+    set_operation_phase(&operation_state, OPERATION_PHASE_COMPLETE);
     return true;
 }

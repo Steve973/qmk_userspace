@@ -6,12 +6,7 @@
 
 typedef enum {
     NAV_CONTEXT_MENU,
-    NAV_CONTEXT_PRECONDITION,
-    NAV_CONTEXT_INPUT,          // Input options
-    NAV_CONTEXT_CONFIRMATION,   // Yes/No
-    NAV_CONTEXT_ACTION,         // Execute
-    NAV_CONTEXT_RESULT,         // Acknowledge
-    NAV_CONTEXT_POSTCONDITION,
+    NAV_CONTEXT_OPERATION,
     NAV_CONTEXT_INVALID
 } nav_context_t;
 
@@ -47,7 +42,7 @@ uint8_t get_history_depth(void);
 
 // State query functions
 bool is_menu_active(void);
-nav_context_t get_current_context(void);
+nav_context_t get_current_navigation_context(void);
 bool is_shortcuts_enabled(void);
 int8_t get_selected_index(void);
 const menu_item_t* get_current_menu(void);

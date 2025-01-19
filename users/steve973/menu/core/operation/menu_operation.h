@@ -11,4 +11,5 @@ void execute_operation(void);
 // Helper functions
 operation_phase_t get_current_operation_phase(void);
 bool is_operation_in_progress(void);
-bool cancel_operation(void);
+bool cancel_operation(bool is_error);
+bool set_operation_selection(int8_t selection);

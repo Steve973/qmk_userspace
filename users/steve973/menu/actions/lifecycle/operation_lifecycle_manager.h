@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../core/operation/operation_types.h"
+#include "menu/core/operation/menu_operation.h"
 
 // Operation phase management
 void advance_operation_phase(operation_context_t* context);

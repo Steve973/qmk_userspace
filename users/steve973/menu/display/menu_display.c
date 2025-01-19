@@ -100,7 +100,7 @@ screen_push_status_t create_menu_screen(const menu_item_t* menu_item, int8_t (*g
 }
 
 screen_push_status_t create_operation_screen(const menu_item_t* item, operation_phase_t phase, const char* owner) {
-    if (!item || !item->display) return SCREEN_PUSH_FAIL_SCREEN_NULL;
+    if (!item) return SCREEN_PUSH_FAIL_SCREEN_NULL;
 
     dprintf("Creating operation screen for: %s, phase: %d\n", item->label, phase);
 

@@ -3,22 +3,20 @@
 #include "../base/menu_core.h"
 #include "../navigation/input_handler.h"
 #include "../navigation/menu_navigation.h"
+#include "../operation/menu_operation.h"
 #include "../state/menu_state.h"
 
 bool handle_menu_input(uint16_t keycode, keyrecord_t* record) {
     if (!record->event.pressed || !is_menu_active()) return false;
 
-    nav_context_t context = get_current_context();
+    nav_context_t context = get_current_navigation_context();
 
     switch (context) {
         case NAV_CONTEXT_MENU:
             handle_menu_navigation_input(keycode);
             break;
 
-        case NAV_CONTEXT_INPUT:
-        case NAV_CONTEXT_CONFIRMATION:
-        case NAV_CONTEXT_ACTION:
-        case NAV_CONTEXT_RESULT:
+        case NAV_CONTEXT_OPERATION:
             handle_operation_input(keycode);
             break;
 
@@ -77,7 +75,47 @@ bool handle_menu_navigation_input(uint16_t keycode) {
 
 bool handle_operation_input(uint16_t keycode) {
     dprintf("Operation input: %d\n", keycode);
-    // TODO: Implement operation-specific input handling
-    // This would handle input during various operation phases
+    const menu_item_t* current = get_current_menu();
+    if (!current) return false;
+
+    operation_phase_t phase = get_current_operation_phase();
+    switch (phase) {
+        case OPERATION_PHASE_NONE:
+            // Should not be handling operation input when no operation is in progress
+            // Fall through to default
+        case OPERATION_PHASE_COMPLETE:
+            // Should not be handling operation input when operation is complete
+            dprintf("WARNING: Should not be handling operation input for operation phase: %d\n", phase);
+            return false;
+        default:
+            break;
+    }
+
+    uint8_t item_count = current->child_count;
+    uint8_t current_index = get_selected_index();
+
+    switch (keycode) {
+        case KC_W:
+        case KC_UP:
+            return set_selected_index((current_index + item_count - 1) % item_count);
+
+        case KC_S:
+        case KC_DOWN:
+            return set_selected_index((current_index + 1) % item_count);
+
+        case KC_D:
+        case KC_ENTER:
+        case KC_RIGHT:
+            set_operation_selection(current_index);
+            return true;
+
+        case KC_A:
+        case KC_ESC:
+        case KC_LEFT:
+            return cancel_operation(false);
+
+        default:
+            return false;
+    }
     return true;
 }

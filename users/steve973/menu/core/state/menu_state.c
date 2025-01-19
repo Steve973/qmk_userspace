@@ -29,7 +29,7 @@ bool is_menu_active(void) {
     return menu_state.current != NULL;
 }
 
-nav_context_t get_current_context(void) {
+nav_context_t get_current_navigation_context(void) {
     if (!is_menu_active()) {
         return NAV_CONTEXT_INVALID;
     }
@@ -38,23 +38,13 @@ nav_context_t get_current_context(void) {
         // Return context based on current operation phase
         operation_phase_t phase = get_current_operation_phase();
         switch (phase) {
-            case OPERATION_PHASE_PRECONDITION:
-                return NAV_CONTEXT_PRECONDITION;
-            case OPERATION_PHASE_INPUT:
-                return NAV_CONTEXT_INPUT;
-            case OPERATION_PHASE_CONFIRMATION:
-                return NAV_CONTEXT_CONFIRMATION;
-            case OPERATION_PHASE_ACTION:
-                return NAV_CONTEXT_ACTION;
-            case OPERATION_PHASE_RESULT:
-                return NAV_CONTEXT_RESULT;
-            case OPERATION_PHASE_POSTCONDITION:
-                return NAV_CONTEXT_POSTCONDITION;
             case OPERATION_PHASE_NONE:
             case OPERATION_PHASE_COMPLETE:
+                dprintf("WARNING: Should not be determining operation context for operation phase: %d\n", phase);
+                break;
             default:
-                dprintf("WARNING: Should not be determining operation phase for operation phase: %d\n", phase);
-                return NAV_CONTEXT_MENU;
+                // All other phases are considered operation context
+                return NAV_CONTEXT_OPERATION;
         }
     }
 

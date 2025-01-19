@@ -82,7 +82,7 @@ bool menu_invoke(void) {
 bool menu_return(void) {
     dprintln("Returning from current menu");
     if (is_operation_in_progress()) {
-        return cancel_operation();
+        return cancel_operation(false);
     } else if (get_history_depth() > 0) {
         return menu_pop_item();
     }

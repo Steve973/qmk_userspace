@@ -25,89 +25,68 @@ static const display_content_t {{ name }}_display = {
 };
 {% endmacro %}
 
-{#
-  Operation configurations macro - handles input option arrays and input configs.
-  Simplified to focus just on input-related structures.
-#}
-{% macro render_operation_configs(op, name) %}
-{% if op.input %}
-    {# Generate option arrays needed for input configs #}
-    {% for input in op.input %}
-        {% if input.type.name == "OPTIONS" %}
-static const char* const {{ name }}_input{{ loop.index0 }}_options[] = {
-            {% for option in input.options %}
-    "{{ option }}",
-            {% endfor %}
-};
-        {% endif %}
-    {% endfor %}
-
-    {# Generate input configuration structures #}
-static const struct input_config {{ name }}_inputs[] = {
-        {% for input in op.input %}
-    {
-        .type = INPUT_TYPE_{{ input.type.name }},
-        .prompt = "{{ input.prompt|replace('\n', '\\n') }}",
-        .default_val = "{{ input.default }}",
-        .wrap = {{ input.wrap|lower }},
-        .live_preview = {{ input.live_preview|default(false)|lower }},
-        .data = {
-            {% if input.type.name == "RANGE" %}
-            .range = {
-                .min = {{ input.range.split("..")[0] }},
-                .max = {{ input.range.split("..")[1].split(":")[0] }},
-                .step = {{ input.range.split(":")[1] }}
-            }
-            {% elif input.type.name == "OPTIONS" %}
-            .options = {
-                .options = {{ name }}_input{{ loop.index0 }}_options,
-                .option_count = {{ input.options|length }}
-            }
-            {% endif %}
-        }
-    }{{ "," if not loop.last }}
-        {% endfor %}
-};
-
-static const struct input_array_config {{ name }}_input_array = {
-    .inputs = {{ name }}_inputs,
-    .input_count = {{ op.input|length }}
-};
-{% endif %}
-
-    {% if op.confirm %}
-static const struct confirm_config {{ name }}_confirm = {
-    .message = "{{ op.confirm.message|replace('\n', '\\n') }}",
-    .timeout_sec = {{ op.confirm.timeout_sec|default(0) }},
-    .true_text = "{{ op.confirm.true_text or 'Yes' }}",
-    .false_text = "{{ op.confirm.false_text or 'No' }}"
-};
-    {% endif %}
-
-    {% if op.result %}
-static const struct result_config {{ name }}_result = {
-    .message = "{{ op.result.message|replace('\n', '\\n') }}",
-    .mode = RESULT_MODE_{{ op.result.mode.name }},
-    .timeout_sec = {{ op.result.timeout_sec|default(0) }},
-    .ok_text = "{{ op.result.ok_text or '' }}"
-};
-    {% endif %}
-{% endmacro %}
-
 {# Generate operation-related display content for all operation phases #}
 {% if item.operation %}
-    {# Call operation configs macro to generate input/confirm/result structures #}
-    {{ render_operation_configs(item.operation, name) }}
-
-    {# Generate display content for each operation phase if it exists #}
+    {# Generate display content for each operation phase #}
     {% if item.operation.precondition %}
-        {% set precondition_display = item.operation.get_display_content('precondition') %}
-        {% if precondition_display %}
-            {{ render_display_content(precondition_display, name ~ '_precondition') }}
-        {% endif %}
+    static const struct precondition_config {{ name }}_precondition = {
+        .base_config = {
+            .title = "{{ item.operation.precondition.title }}",
+            .message = "{{ item.operation.precondition.message|replace('\n', '\\n') }}",
+            .timeout_sec = {{ item.operation.precondition.timeout_sec|default(0) }}
+        },
+        .button = {
+            .ok_text = "{{ item.operation.precondition.ok_text or 'OK' }}"
+        },
+        .handler = "{{ item.operation.precondition.handler }}",
+        .args = {{ item.operation.precondition.args if item.operation.precondition.args else "NULL" }}
+    };
+    {% set precondition_display = item.operation.get_display_content('precondition') %}
+    {% if precondition_display %}
+        {{ render_display_content(precondition_display, name ~ '_precondition') }}
+    {% endif %}
     {% endif %}
 
     {% if item.operation.inputs %}
+        {# First generate option arrays needed for input configs #}
+        {% for input in item.operation.inputs %}
+            {% if input.type.name == "OPTIONS" %}
+    static const char* const {{ name }}_input{{ loop.index0 }}_options[] = {
+                {% for option in input.options %}
+        "{{ option }}",
+                {% endfor %}
+    };
+            {% endif %}
+        {% endfor %}
+
+        {# Then generate the input configs that can reference those arrays #}
+    static const struct input_config {{ name }}_inputs[] = {
+        {% for input in item.operation.inputs %}
+        {
+            .type = INPUT_TYPE_{{ input.type.name }},
+            .title = "{{ input.title }}",
+            .prompt = "{{ input.prompt|replace('\n', '\\n') }}",
+            .default_val = "{{ input.default }}",
+            .wrap = {{ input.wrap|lower }},
+            .live_preview = {{ input.live_preview|default(false)|lower }},
+            .data = {
+                {% if input.type.name == "RANGE" %}
+                .range = {
+                    .min = {{ input.range.split("..")[0] }},
+                    .max = {{ input.range.split("..")[1].split(":")[0] }},
+                    .step = {{ input.range.split(":")[1] }}
+                }
+                {% elif input.type.name == "OPTIONS" %}
+                .options = {
+                    .options = {{ name }}_input{{ loop.index0 }}_options,
+                    .option_count = {{ input.options|length }}
+                }
+                {% endif %}
+            }
+        }{{ "," if not loop.last }}
+        {% endfor %}
+    };
+
         {% set input_display = item.operation.get_display_content('input') %}
         {% if input_display %}
             {{ render_display_content(input_display, name ~ '_input') }}
@@ -115,10 +94,21 @@ static const struct result_config {{ name }}_result = {
     {% endif %}
 
     {% if item.operation.confirm %}
-        {% set confirm_display = item.operation.get_display_content('confirm') %}
-        {% if confirm_display %}
-            {{ render_display_content(confirm_display, name ~ '_confirm') }}
-        {% endif %}
+    static const struct confirm_config {{ name }}_confirm = {
+        .base_config = {
+            .title = "{{ item.operation.confirm.title }}",
+            .message = "{{ item.operation.confirm.message|replace('\n', '\\n') }}",
+            .timeout_sec = {{ item.operation.confirm.timeout_sec|default(0) }}
+        },
+        .buttons = {
+            .true_text = "{{ item.operation.confirm.true_text or 'Yes' }}",
+            .false_text = "{{ item.operation.confirm.false_text or 'No' }}"
+        }
+    };
+    {% set confirm_display = item.operation.get_display_content('confirm') %}
+    {% if confirm_display %}
+        {{ render_display_content(confirm_display, name ~ '_confirm') }}
+    {% endif %}
     {% endif %}
 
     {% set action_display = item.operation.get_display_content('action') %}
@@ -127,17 +117,39 @@ static const struct result_config {{ name }}_result = {
     {% endif %}
 
     {% if item.operation.result %}
-        {% set result_display = item.operation.get_display_content('result') %}
-        {% if result_display %}
-            {{ render_display_content(result_display, name ~ '_result') }}
-        {% endif %}
+    static const struct result_config {{ name }}_result = {
+        .base_config = {
+            .title = "{{ item.operation.result.title }}",
+            .message = "{{ item.operation.result.message|replace('\n', '\\n') }}",
+            .timeout_sec = {{ item.operation.result.timeout_sec|default(0) }}
+        },
+        .button = {
+            .ok_text = "{{ item.operation.result.ok_text or 'OK' }}"
+        }
+    };
+    {% set result_display = item.operation.get_display_content('result') %}
+    {% if result_display %}
+        {{ render_display_content(result_display, name ~ '_result') }}
+    {% endif %}
     {% endif %}
 
     {% if item.operation.postcondition %}
-        {% set postcondition_display = item.operation.get_display_content('postcondition') %}
-        {% if postcondition_display %}
-            {{ render_display_content(postcondition_display, name ~ '_postcondition') }}
-        {% endif %}
+    static const struct postcondition_config {{ name }}_postcondition = {
+        .base_config = {
+            .title = "{{ item.operation.postcondition.title }}",
+            .message = "{{ item.operation.postcondition.message|replace('\n', '\\n') }}",
+            .timeout_sec = {{ item.operation.postcondition.timeout_sec|default(0) }}
+        },
+        .button = {
+            .ok_text = "{{ item.operation.postcondition.ok_text or 'OK' }}"
+        },
+        .handler = "{{ item.operation.postcondition.handler }}",
+        .args = {{ item.operation.postcondition.args if item.operation.postcondition.args else "NULL" }}
+    };
+    {% set postcondition_display = item.operation.get_display_content('postcondition') %}
+    {% if postcondition_display %}
+        {{ render_display_content(postcondition_display, name ~ '_postcondition') }}
+    {% endif %}
     {% endif %}
 {% endif %}
 
@@ -194,7 +206,7 @@ static const menu_item_t {{ name }} = {
     .help_text = "{{ (item.help_text or '')|replace('\n', '\\n') }}",
     .operation = {
         .action = {% if item.operation %}"{{ item.operation.action }}"{% else %}NULL{% endif %},
-        .inputs = {% if item.operation and item.operation.input %}&{{ name }}_input_array{% else %}NULL{% endif %},
+        .inputs = {% if item.operation and item.operation.inputs %}{{ name }}_inputs{% else %}NULL{% endif %},
         .confirm = {% if item.operation and item.operation.confirm %}&{{ name }}_confirm{% else %}NULL{% endif %},
         .result = {% if item.operation and item.operation.result %}&{{ name }}_result{% else %}NULL{% endif %},
         .precondition_display = {% if precondition_display %}&{{ name }}_precondition_display{% else %}NULL{% endif %},
@@ -213,5 +225,4 @@ static const menu_item_t {{ name }} = {
     .child_count = {{ child_names|length if item.children else 0 }},
     .display = {% if menu_display %}&{{ name }}_display{% else %}NULL{% endif %},
     .screen_content = {% if item.screen_content %}&{{ item.screen_content }}{% else %}NULL{% endif %}
-
 };
