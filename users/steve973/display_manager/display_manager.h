@@ -33,10 +33,19 @@ typedef enum {
  */
 typedef enum {
     CONTENT_TYPE_KEY_VALUE,
-    CONTENT_TYPE_LIST,
+    CONTENT_TYPE_LIST_ITEM,
+    CONTENT_TYPE_BUTTON,
     CONTENT_TYPE_IMAGE,
     CONTENT_TYPE_CUSTOM
 } content_type_t;
+
+/**
+ * @brief Configuration for highlighting text by wrapping it in two chars.
+ */
+typedef struct {
+    char* left;     // Opening character
+    char* right;    // Closing character
+} highlight_wrap_config_t;
 
 /**
  * @brief Types of lighlighting for items on the screen.
@@ -45,6 +54,7 @@ typedef enum {
     HIGHLIGHT_NONE,
     HIGHLIGHT_INVERTED,    // Invert the text
     HIGHLIGHT_PREFIX,      // Use prefix character (*, >, etc.)
+    HIGHLIGHT_WRAP,        // Use a prefix and suffix character (e.g. [text])
     HIGHLIGHT_GLYPH        // Use a custom glyph/icon
 } highlight_type_t;
 
@@ -72,8 +82,9 @@ typedef struct {
     bool is_dynamic;
     highlight_type_t highlight_type;
     union {
-        char prefix_char;         // For HIGHLIGHT_PREFIX
-        const uint8_t* glyph;     // For HIGHLIGHT_GLYPH
+        char prefix_char;                     // For HIGHLIGHT_PREFIX
+        highlight_wrap_config_t wrap_config;  // For HIGHLIGHT_WRAP
+        const uint8_t* glyph;                 // For HIGHLIGHT_GLYPH
     } highlight;
     const uint8_t* icon;          // Optional icon beside text
 } list_item_t;
@@ -211,6 +222,11 @@ void clear_display(void);
 void flush_display(void);
 
 /**
+ * @brief Calculates the width of a text string.
+ */
+extern uint16_t calculate_text_width(const char* text);
+
+/**
  * @brief Calculates the starting x-position to center text on the display.
  */
 uint16_t calculate_center_position(const screen_element_t* element);
@@ -224,6 +240,12 @@ extern uint16_t calculate_center_xpos(const char* text);
  * @brief Calculate the starting y-position for a group of text lines to center text on the display.
  */
 extern uint16_t calculate_center_ypos(uint8_t num_lines, bool with_title);
+
+/**
+ * @brief Common, implementation-independent logic for calculating the starting y-position for a
+ * group of text lines to center text on the display.
+ */
+uint16_t calculate_center_ypos_common(uint8_t num_lines, bool with_title, uint8_t display_rows);
 
 /**
  * @brief Render text with an underline.

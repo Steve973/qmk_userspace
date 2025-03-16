@@ -28,13 +28,13 @@ phase_result_t result_init(operation_context_t* operation_state) {
 }
 
 phase_result_t result_input(operation_context_t* operation_state) {
-    const struct result_config* config = operation_state->item->operation.result;
+    // const struct result_config* config = operation_state->item->operation.result;
 
     if (operation_state->choice_made >= 0) {
         dprintln("Result input passed -- advancing");
         return PHASE_RESULT_ADVANCE;
     }
-    dprintf("Result timeout: %d\n", config->base_config.timeout_sec);
+    // dprintf("Result timeout: %d\n", config->base_config.timeout_sec);
     // TODO: handle timeout
     dprintln("Result input passed -- advancing");
     return PHASE_RESULT_ADVANCE;

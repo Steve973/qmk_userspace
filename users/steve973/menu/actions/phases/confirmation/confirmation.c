@@ -42,7 +42,6 @@ phase_result_t confirmation_input(operation_context_t* operation_state) {
     } else if (operation_state->choice_made > -1) {
         remove_menu_screen(CONFIRMATION_OWNER);
     } else {
-        dprintln("Confirmation input not yet made -- continuing");
         return PHASE_RESULT_CONTINUE;
     }
     dprintln("Confirmation input passed -- advancing");
@@ -51,7 +50,7 @@ phase_result_t confirmation_input(operation_context_t* operation_state) {
 
 phase_result_t confirmation_processing(operation_context_t* operation_state) {
     dprintf("Confirmation processing: %d\n", operation_state->choice_made);
-    if (operation_state->choice_made == 0) {
+    if (operation_state->choice_made == 1) {
         operation_state->result = OPERATION_RESULT_SUCCESS;
         dprintln("Confirmation processing passed -- advancing");
         return PHASE_RESULT_ADVANCE;

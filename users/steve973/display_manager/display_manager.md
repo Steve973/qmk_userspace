@@ -121,7 +121,7 @@ screen_content_t* create_status_screen(void) {
 
     // Create a list item
     elements[1] = (screen_element_t){
-        .type = CONTENT_TYPE_LIST,
+        .type = CONTENT_TYPE_LIST_ITEM,
         .x = 0,
         .y = 2,
         .content.list_item = {
@@ -218,7 +218,7 @@ screen_element_t element = {
 
 ```c
 screen_element_t element = {
-    .type = CONTENT_TYPE_LIST,
+    .type = CONTENT_TYPE_LIST_ITEM,
     .content.list_item = {
         .text.static_text = "Select Me",
         .highlight_type = HIGHLIGHT_INVERTED
@@ -313,19 +313,19 @@ uint16_t start_y = calculate_center_ypos(3, true);
 // Create elements using calculated Y position
 screen_element_t elements[] = {
     {
-        .type = CONTENT_TYPE_LIST,
+        .type = CONTENT_TYPE_LIST_ITEM,
         .x = 0,
         .y = start_y,     // First item
         .content = { /* ... */ }
     },
     {
-        .type = CONTENT_TYPE_LIST,
+        .type = CONTENT_TYPE_LIST_ITEM,
         .x = 0,
         .y = start_y + 1, // Second item
         .content = { /* ... */ }
     },
     {
-        .type = CONTENT_TYPE_LIST,
+        .type = CONTENT_TYPE_LIST_ITEM,
         .x = 0,
         .y = start_y + 2, // Third item
         .content = { /* ... */ }
@@ -370,7 +370,7 @@ List items can be highlighted in different ways:
 
 ```c
 screen_element_t menu_item = {
-    .type = CONTENT_TYPE_LIST,
+    .type = CONTENT_TYPE_LIST_ITEM,
     .content.list_item = {
         .text.static_text = "Menu Item",
         .highlight_type = HIGHLIGHT_INVERTED  // Inverted colors
@@ -378,7 +378,7 @@ screen_element_t menu_item = {
 };
 
 screen_element_t prefix_item = {
-    .type = CONTENT_TYPE_LIST,
+    .type = CONTENT_TYPE_LIST_ITEM,
     .content.list_item = {
         .text.static_text = "Prefixed Item",
         .highlight_type = HIGHLIGHT_PREFIX,   // Adds prefix character
@@ -505,7 +505,7 @@ void create_settings_screen(void) {
 
     // Menu items
     elements[1] = (screen_element_t){
-        .type = CONTENT_TYPE_LIST,
+        .type = CONTENT_TYPE_LIST_ITEM,
         .x = 0,
         .y = 2,
         .content.list_item = {
@@ -515,7 +515,7 @@ void create_settings_screen(void) {
     };
 
     elements[2] = (screen_element_t){
-        .type = CONTENT_TYPE_LIST,
+        .type = CONTENT_TYPE_LIST_ITEM,
         .x = 0,
         .y = 3,
         .content.list_item = {

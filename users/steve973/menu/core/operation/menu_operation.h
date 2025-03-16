@@ -10,6 +10,8 @@ void execute_operation(void);
 
 // Helper functions
 operation_phase_t get_current_operation_phase(void);
+phase_state_t get_current_phase_state(void);
 bool is_operation_in_progress(void);
 bool cancel_operation(bool is_error);
 bool set_operation_selection(int8_t selection);
+int8_t get_operation_selection(void);

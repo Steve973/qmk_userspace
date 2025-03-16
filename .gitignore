@@ -20,3 +20,5 @@ compile_commands.json
 .history
 
 users/steve973/menu/core/generated/
+tests/
+.github/

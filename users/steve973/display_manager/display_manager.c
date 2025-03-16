@@ -8,6 +8,7 @@
 
 #define IMG_ORIGIN 0, 0
 #define DISPLAY_BUFFER_SIZE 22
+#define BUTTON_SEPARATOR "    "
 
 static char display_buffer[DISPLAY_BUFFER_SIZE];
 
@@ -62,12 +63,14 @@ uint16_t calculate_center_position(const screen_element_t* element) {
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "%s: %s", kv->label, value);
             break;
         }
-        case CONTENT_TYPE_LIST: {
+        case CONTENT_TYPE_LIST_ITEM: {
             const list_item_t* item = &element->content.list_item;
             const char* text = item->is_dynamic ? item->text.get_text() : item->text.static_text;
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "%s", text);
             break;
         }
+        case CONTENT_TYPE_BUTTON:
+            // The whole row would be centered, not the individual buttons.
         case CONTENT_TYPE_IMAGE:
         case CONTENT_TYPE_CUSTOM:
             break;
@@ -97,6 +100,9 @@ static void render_title(const char* title, highlight_type_t selection) {
     if (selection == HIGHLIGHT_PREFIX) {
         snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "> %s", title);
         display_text = display_buffer;
+    } else if (selection == HIGHLIGHT_WRAP) {
+        snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "[%s]", title);
+        display_text = display_buffer;
     }
 
     uint16_t x_pos = calculate_center_xpos(display_text);
@@ -108,6 +114,8 @@ static void render_title(const char* title, highlight_type_t selection) {
         case HIGHLIGHT_PREFIX:
             render_underlined_text(display_buffer, x_pos, 0);
             break;
+        case HIGHLIGHT_WRAP:
+            render_underlined_text(display_buffer, x_pos, 0);
         case HIGHLIGHT_GLYPH:
             // Not supported (fall-through)
         case HIGHLIGHT_NONE:
@@ -115,6 +123,107 @@ static void render_title(const char* title, highlight_type_t selection) {
             render_underlined_text(title, x_pos, 0);
             break;
     }
+}
+
+/**
+ * @brief Calculate the starting y-position for a group of text lines to center text on the display.
+ *
+ * @param num_lines The number of lines to center.
+ * @param with_title Whether a title is present.
+ * @param display_rows The number of rows on the display.
+ * @return The y-coordinate to center the text vertically.
+ */
+uint16_t calculate_center_ypos_common(uint8_t num_lines, bool with_title, uint8_t display_rows) {
+    uint8_t title_rows = with_title ? 2 : 0;
+    uint8_t remaining_rows = display_rows - title_rows;
+    uint8_t min_line = title_rows;
+    uint8_t start_line = title_rows + ((remaining_rows - num_lines) / 2);
+    return MAX(start_line, min_line);
+}
+
+/**
+ * @brief Calculate the number of lines the content uses.
+ *
+ * @param content the screen content.
+ * @return The number of lines the screen content uses.
+ */
+static uint8_t calculate_content_line_count(const screen_content_t* content) {
+    uint8_t line_count = 0;
+    bool in_button_row = false;
+
+    for (uint8_t i = 0; i < content->element_count; i++) {
+        const screen_element_t* element = &content->elements[i];
+        if (element->type == CONTENT_TYPE_BUTTON) {
+            // Buttons in a row count as 1 line total
+            // and they are all adjacent
+            if (!in_button_row) {
+                line_count++;
+                in_button_row = true;
+            }
+        } else {
+            // Each non-button element gets its own line
+            in_button_row = false;
+            line_count++;
+        }
+    }
+
+    return line_count;
+}
+
+/**
+ * @brief Represents the x and y position that the content uses.
+ */
+typedef struct {
+    uint8_t x;
+    uint8_t y;
+} element_position_t;
+
+/**
+ * @brief Calculate the coordinates for a button element.
+ *
+ * @param element The button element to calculate the position for.
+ * @param i The index of the button element in the content.
+ * @param content The screen content.
+ * @param current_xpos The current x position of the button row.
+ * @param center_ypos The y position to center the button row.
+ */
+static element_position_t calculate_button_position(screen_element_t* element, uint8_t i, screen_content_t* content, uint16_t current_xpos, uint16_t center_ypos) {
+    uint8_t x, y;
+
+    // Button rows share the same y-position
+    y = element->y ? element->y : center_ypos;
+
+    // For subsequent buttons in a row, adjust x position based on previous buttons
+    if (i > 0 && content->elements[i-1].type == CONTENT_TYPE_BUTTON) {
+        const list_item_t* prev = &content->elements[i-1].content.list_item;
+        const char* prev_text = prev->is_dynamic ? prev->text.get_text() : prev->text.static_text;
+        x = current_xpos + calculate_text_width(prev_text) + calculate_text_width(BUTTON_SEPARATOR);
+    } else {
+        if (element->x) {
+            x = element->x;
+        } else {
+            // Build complete button string with spacing
+            memset(display_buffer, 0, DISPLAY_BUFFER_SIZE);
+            for (uint8_t j = i; j < content->element_count; j++) {
+                if (content->elements[j].type == CONTENT_TYPE_BUTTON) {
+                    const list_item_t* button = &content->elements[j].content.list_item;
+                    const char* text = button->is_dynamic ? button->text.get_text() : button->text.static_text;
+
+                    // Add spacing between buttons
+                    if (display_buffer[0] != '\0') {
+                        strcat(display_buffer, BUTTON_SEPARATOR);
+                    }
+                    strcat(display_buffer, text);
+                } else {
+                    break;  // End of button row
+                }
+            }
+
+            // Now we can center the whole row if needed
+            x = calculate_center_xpos(display_buffer);
+        }
+    }
+    return (element_position_t){x, y};
 }
 
 /**
@@ -140,7 +249,9 @@ static void render_screen_content(screen_content_t* content) {
     // Calculate center position for elements if no (x, y)
     // coordinates are provided to center the elements
     // vertically, and account for title, if one is present
-    uint16_t center_ypos = calculate_center_ypos(content->element_count, content->title);
+    uint16_t center_ypos = calculate_center_ypos(calculate_content_line_count(content), content->title);
+
+    uint8_t current_xpos = 0;
 
     // Render each element
     for (uint8_t i = 0; i < content->element_count; i++) {
@@ -150,18 +261,26 @@ static void render_screen_content(screen_content_t* content) {
         }
 
         // Only set highlight for list items and only if they exist
-        if (element->type == CONTENT_TYPE_LIST) {
+        if (element->type == CONTENT_TYPE_LIST_ITEM || element->type == CONTENT_TYPE_BUTTON) {
             element->content.list_item.highlight_type =
                 (highlight_index == i) ? HIGHLIGHT_INVERTED : HIGHLIGHT_NONE;
         }
 
-        // Use default position if element position is 0,0
-        uint8_t x = element->x ? element->x : content->default_x;
-        uint8_t y = element->y ? element->y : center_ypos + i;
+        uint8_t x, y;
+        if (element->type == CONTENT_TYPE_BUTTON) {
+            element_position_t pos = calculate_button_position(element, i, content, current_xpos, center_ypos);
+            x = pos.x;
+            y = pos.y;
+            current_xpos = x;
+        } else {
+            // Regular elements increment y-position per item
+            x = element->x ? element->x : content->default_x;
+            y = element->y ? element->y : center_ypos + i;
 
-        if (content->center_contents) {
-            // Adjust x for centering if needed
-            x = calculate_center_position(element);
+            if (content->center_contents) {
+                // Adjust x for centering if needed
+                x = calculate_center_position(element);
+            }
         }
 
         switch (element->type) {
@@ -169,7 +288,9 @@ static void render_screen_content(screen_content_t* content) {
                 render_key_value(&element->content.key_value, x, y);
                 break;
 
-            case CONTENT_TYPE_LIST:
+            case CONTENT_TYPE_LIST_ITEM:
+                // same as button row rendering call
+            case CONTENT_TYPE_BUTTON:
                 render_list_item(&element->content.list_item, x, y);
                 break;
 

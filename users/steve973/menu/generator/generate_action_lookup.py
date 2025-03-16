@@ -37,6 +37,7 @@ def generate_header(output_file: str):
     header_file = output_file.replace('.c', '.h')
     with open(header_file, 'w') as f:
         f.write('#pragma once\n\n')
+        f.write('#include <stdlib.h>\n')
         f.write('#include "menu/core/operation/operation_types.h"\n\n')
         f.write('extern const size_t action_lookup_table_size;\n')
         f.write('extern const action_lookup_entry_t* const action_lookup_entries;\n')
@@ -45,6 +46,7 @@ def generate_lookup_table(output_file: str, actions: dict):
     headers = set(actions.values())
 
     with open(output_file, 'w') as f:
+        f.write('#include <stdlib.h>\n')
         # Write operation_types.h include
         f.write('#include "menu/core/operation/operation_types.h"\n')
 

@@ -15,7 +15,6 @@ static operation_context_t operation_state;
 
 #define HANDLE_PHASE_STATES(phase) \
     ({ \
-        dprintf("Handling phase: %d, state: %d\n", operation_state.current_phase, operation_state.phase_state); \
         phase_result_t result; \
         switch (operation_state.phase_state) { \
             case PHASE_STATE_INIT:           result = phase##_init(&operation_state); break; \
@@ -32,7 +31,6 @@ static operation_context_t operation_state;
  * @brief Handle operation lifecycle state transition based on the phase result.
  */
 static void handle_phase_result(operation_context_t* context, phase_result_t result) {
-    dprintf("Phase: %d, result: %d\n", context->current_phase, result);
     switch (result) {
         case PHASE_RESULT_CONTINUE:
             // Stay in current state
@@ -93,7 +91,6 @@ bool start_operation(const menu_item_t* item) {
  */
 void execute_operation(void) {
     const menu_item_t* item = operation_state.item;
-    dprintf("Executing operation: %s (%d)\r\n", item->label, operation_state.current_phase);
     phase_result_t phase_result = PHASE_RESULT_CONTINUE;
 
     if (operation_state.current_phase == OPERATION_PHASE_NONE) {
@@ -102,33 +99,27 @@ void execute_operation(void) {
     }
 
     if (operation_state.current_phase == OPERATION_PHASE_PRECONDITION) {
-        dprintln("Running precondition phase");
         phase_result = item->operation.precondition ? HANDLE_PHASE_STATES(precondition) : PHASE_RESULT_COMPLETE;
     }
 
     if (operation_state.current_phase == OPERATION_PHASE_INPUT) {
-        dprintln("Running input phase");
         phase_result = item->operation.inputs ? HANDLE_PHASE_STATES(input) : PHASE_RESULT_COMPLETE;
     }
 
     if (operation_state.current_phase == OPERATION_PHASE_CONFIRMATION) {
-        dprintln("Running confirmation phase");
         phase_result = item->operation.confirm ? HANDLE_PHASE_STATES(confirmation) : PHASE_RESULT_COMPLETE;
     }
 
     // Action phase is required
     if (operation_state.current_phase == OPERATION_PHASE_ACTION) {
-        dprintln("Running action phase");
         phase_result = HANDLE_PHASE_STATES(action);
     }
 
     if (operation_state.current_phase == OPERATION_PHASE_RESULT) {
-        dprintln("Running result phase");
         phase_result = item->operation.result ? HANDLE_PHASE_STATES(result) : PHASE_RESULT_COMPLETE;
     }
 
     if (operation_state.current_phase == OPERATION_PHASE_POSTCONDITION) {
-        dprintln("Running postcondition phase");
         phase_result = item->operation.postcondition ? HANDLE_PHASE_STATES(postcondition) : PHASE_RESULT_COMPLETE;
     }
 
@@ -140,8 +131,16 @@ bool set_operation_selection(int8_t selection) {
     return true;
 }
 
+int8_t get_operation_selection(void) {
+    return operation_state.choice_made;
+}
+
 operation_phase_t get_current_operation_phase(void) {
     return operation_state.current_phase;
+}
+
+phase_state_t get_current_phase_state(void) {
+    return operation_state.phase_state;
 }
 
 bool is_operation_in_progress(void) {

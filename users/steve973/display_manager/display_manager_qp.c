@@ -26,11 +26,15 @@ void flush_display(void) {
     qp_flush(display);
 }
 
+uint16_t calculate_text_width(const char* text) {
+    return qp_textwidth(font, text);
+}
+
 /**
  * @brief Calculate the starting x-position to center text on the display.
  */
 uint16_t calculate_center_xpos(const char* text) {
-    uint16_t text_width = qp_textwidth(font, text);
+    uint16_t text_width = calculate_text_width(text);
     return (qp_get_width(display) - text_width) / 2;
 }
 
@@ -38,12 +42,8 @@ uint16_t calculate_center_xpos(const char* text) {
  * @brief Calculate the starting y-position for a group of text lines to center text on the display.
  */
 uint16_t calculate_center_ypos(uint8_t num_lines, bool with_title) {
-    uint8_t title_rows = with_title ? 2 : 0;
     uint8_t display_rows = qp_get_height(display) / font->line_height;
-    uint8_t remaining_rows = display_rows - title_rows;
-    uint8_t min_line = title_rows;
-    uint8_t start_line = title_rows + ((remaining_rows - num_lines) / 2);
-    return MAX(start_line, min_line);
+    return calculate_center_ypos_common(num_lines, with_title, display_rows);
 }
 
 /**
@@ -58,7 +58,7 @@ uint16_t calculate_center_ypos(uint8_t num_lines, bool with_title) {
  */
 void render_underlined_text_adv(const char* text, uint8_t x, uint8_t y, uint8_t gap, uint8_t thickness, bool invert) {
     // Get text dimensions
-    uint16_t text_width = qp_textwidth(font, text);
+    uint16_t text_width = calculate_text_width(text);
     uint16_t line_height = font->line_height;
 
     // Draw the text
@@ -121,6 +121,11 @@ void render_list_item(const list_item_t* item, uint8_t x, uint8_t y) {
         case HIGHLIGHT_PREFIX:
             snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "%c %s",
                     item->highlight.prefix_char, text);
+            qp_drawtext(display, x, y * font->line_height, font, display_buffer);
+            break;
+        case HIGHLIGHT_WRAP:
+            snprintf(display_buffer, DISPLAY_BUFFER_SIZE, "%s%s%s",
+                item->highlight.wrap_config.left, text, item->highlight.wrap_config.right);
             qp_drawtext(display, x, y * font->line_height, font, display_buffer);
             break;
         case HIGHLIGHT_GLYPH:

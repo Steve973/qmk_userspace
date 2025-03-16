@@ -317,7 +317,10 @@
                 "type": {
                     "type": "string",
                     "enum": [
-                        "content_type_key_value"
+                        "content_type_key_value",
+                        "content_type_list_item",
+                        "content_type_button",
+                        "content_type_image"
                     ]
                 },
                 "x": {
@@ -391,7 +394,7 @@
                                 "enum": [
                                     "message",
                                     "input",
-                                    "selection",
+                                    "button",
                                     "list"
                                 ]
                             },

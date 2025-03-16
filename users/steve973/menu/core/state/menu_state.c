@@ -100,7 +100,6 @@ bool pop_menu_history(void) {
     return true;
 }
 
-// Maybe also
 uint8_t get_history_depth(void) {
     return menu_state.history.depth;
 }

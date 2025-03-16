@@ -32,10 +32,12 @@ typedef enum {
 
 /**
  * Rule Types for Condition Checking
+ * VALUE_EQUALS: Compare variable against value
+ * VALUE_COMPARE: Compare with operators (>, <, etc)
  */
 typedef enum {
-    RULE_VALUE_EQUALS,       // Compare variable against value
-    RULE_VALUE_COMPARE      // Compare with operators (>, <, etc)
+    RULE_VALUE_EQUALS,
+    RULE_VALUE_COMPARE
 } rule_type_t;
 
 /**
@@ -50,11 +52,18 @@ typedef enum {
     INPUT_TYPE_CUSTOM
 } input_type_t;
 
+/**
+ * Display Element Types - Defines the behavior of a display element
+ * MESSAGE:    Shows information without action
+ * INPUT:      Prompts user for input
+ * BUTTON:     Shows a button for user interaction (OK, Cancel, etc)
+ * LIST_ITEM:  Shows a list item
+ */
 typedef enum {
     DISPLAY_TYPE_MESSAGE,
     DISPLAY_TYPE_INPUT,
-    DISPLAY_TYPE_SELECTION,
-    DISPLAY_TYPE_LIST
+    DISPLAY_TYPE_BUTTON,
+    DISPLAY_TYPE_LIST_ITEM
 } display_element_type_t;
 
 /**
@@ -159,7 +168,7 @@ typedef struct conditions_config {
             struct value_compare_config {
                 const char* variable;
                 const char* value;
-                compare_operator_t operator;
+                compare_operator_t compare_operator;
             } value_compare;
         } rule_data;
     }* rules;

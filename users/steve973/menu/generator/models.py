@@ -5,8 +5,8 @@ from typing import Optional, List, Union
 class DisplayElementType(Enum):
     MESSAGE = "message"
     INPUT = "input"
-    SELECTION = "selection"
-    LIST = "list"
+    LIST_ITEM = "list_item"
+    BUTTON = "button"
 
 @dataclass
 class DisplayElement:
@@ -98,7 +98,7 @@ class Operation:
                         is_selectable=False
                     ),
                     DisplayElement(
-                        type=DisplayElementType.SELECTION,
+                        type=DisplayElementType.BUTTON,
                         text=self.precondition.ok_text,
                         is_selectable=True
                     )
@@ -134,12 +134,12 @@ class Operation:
                         is_selectable=False
                     ),
                     DisplayElement(
-                        type=DisplayElementType.SELECTION,
+                        type=DisplayElementType.BUTTON,
                         text=self.confirm.true_text,
                         is_selectable=True
                     ),
                     DisplayElement(
-                        type=DisplayElementType.SELECTION,
+                        type=DisplayElementType.BUTTON,
                         text=self.confirm.false_text,
                         is_selectable=True
                     )
@@ -168,7 +168,7 @@ class Operation:
                         is_selectable=False
                     ),
                     DisplayElement(
-                        type=DisplayElementType.SELECTION,
+                        type=DisplayElementType.BUTTON,
                         text=self.result.ok_text,
                         is_selectable=True
                     )
@@ -185,7 +185,7 @@ class Operation:
                         is_selectable=False
                     ),
                     DisplayElement(
-                        type=DisplayElementType.SELECTION,
+                        type=DisplayElementType.BUTTON,
                         text=self.postcondition.ok_text,
                         is_selectable=True
                     )
@@ -255,7 +255,7 @@ class MenuItem:
         if self.type == MenuType.SUBMENU:
             elements = [
                 DisplayElement(
-                    type=DisplayElementType.LIST,
+                    type=DisplayElementType.LIST_ITEM,
                     text=child.label,
                     is_selectable=True
                 ) for child in self.children

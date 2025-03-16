@@ -11,18 +11,12 @@ bool handle_menu_input(uint16_t keycode, keyrecord_t* record) {
 
     nav_context_t context = get_current_navigation_context();
 
-    switch (context) {
-        case NAV_CONTEXT_MENU:
-            handle_menu_navigation_input(keycode);
-            break;
-
-        case NAV_CONTEXT_OPERATION:
-            handle_operation_input(keycode);
-            break;
-
-        default:
-            break;
+    if (context == NAV_CONTEXT_MENU) {
+        handle_menu_navigation_input(keycode);
+    } else if (context == NAV_CONTEXT_OPERATION) {
+        handle_operation_input(keycode);
     }
+
     update_menu_activity();
     return false;
 }
@@ -34,88 +28,101 @@ bool handle_menu_navigation_input(uint16_t keycode) {
 
     uint8_t item_count = current->child_count;
     uint8_t current_index = get_selected_index();
-    bool shortcuts_enabled = is_shortcuts_enabled();
 
-    switch (keycode) {
-        case KC_W:
-        case KC_UP:
-            return set_selected_index((current_index + item_count - 1) % item_count);
-
-        case KC_S:
-        case KC_DOWN:
-            return set_selected_index((current_index + 1) % item_count);
-
-        case KC_D:
-        case KC_ENTER:
-        case KC_RIGHT:
-            return menu_invoke();
-
-        case KC_A:
-        case KC_ESC:
-        case KC_LEFT:
-            return can_navigate_back() ? menu_return() : exit_menu_mode();
-
-        default:
-            // Handle shortcuts if enabled
-            if (shortcuts_enabled) {
-                // Find item with matching shortcut keycode
-                for (uint8_t i = 0; i < item_count; i++) {
-                    const menu_item_t* item = current->children[i];
-                    if (item->shortcut && keycode == item->shortcut[0]) {
-                        set_selected_index(i);
-                        return menu_invoke();
-                    }
+    if (keycode == KC_W || keycode == KC_UP) {
+        return set_selected_index((current_index + item_count - 1) % item_count);
+    } else if (keycode == KC_S || keycode == KC_DOWN) {
+        return set_selected_index((current_index + 1) % item_count);
+    } else if (keycode == KC_D || keycode == KC_ENTER || keycode == KC_RIGHT) {
+        return menu_invoke();
+    } else if (keycode == KC_A || keycode == KC_ESC || keycode == KC_LEFT) {
+        return can_navigate_back() ? menu_return() : exit_menu_mode();
+    } else {
+        // Handle shortcuts if enabled
+        if (is_shortcuts_enabled()) {
+            // Find item with matching shortcut keycode
+            for (uint8_t i = 0; i < item_count; i++) {
+                const menu_item_t* item = current->children[i];
+                if (item->shortcut && keycode == item->shortcut[0]) {
+                    set_selected_index(i);
+                    return menu_invoke();
                 }
-                return false;
-            } else {
-                return false;
             }
+            return false;
+        } else {
+            return false;
+        }
     }
 }
 
+/**
+ * @brief Handle operation input based on the current operation phase.
+ *
+ * This function handles operation input based on the current operation phase and
+ * phase state.  This function will return true if the input was handled, and false
+ * if the input was not handled. If the phase state is awaiting input, and if the
+ * operation phase is in a button selection mode, the input will be handled as a
+ * button selection input. Otherwise, the input will be handled as a regular list
+ * navigation input.
+ */
 bool handle_operation_input(uint16_t keycode) {
     dprintf("Operation input: %d\n", keycode);
     const menu_item_t* current = get_current_menu();
     if (!current) return false;
 
     operation_phase_t phase = get_current_operation_phase();
+    char* phase_name;
     switch (phase) {
+        // Handle cases where an operation is not in progress by returning
         case OPERATION_PHASE_NONE:
-            // Should not be handling operation input when no operation is in progress
-            // Fall through to default
+            phase_name = "NONE";
         case OPERATION_PHASE_COMPLETE:
-            // Should not be handling operation input when operation is complete
-            dprintf("WARNING: Should not be handling operation input for operation phase: %d\n", phase);
+            phase_name = phase_name == NULL ? "COMPLETE" : phase_name;
+            dprintf("WARNING: Should not be handling operation input for operation phase: %s\n", phase_name);
             return false;
         default:
             break;
     }
 
+    phase_state_t state = get_current_phase_state();
+    bool button_selection_mode = (
+        phase == OPERATION_PHASE_CONFIRMATION ||
+        phase == OPERATION_PHASE_PRECONDITION ||
+        phase == OPERATION_PHASE_POSTCONDITION ||
+        phase == OPERATION_PHASE_RESULT
+    ) && state == PHASE_STATE_AWAITING_INPUT;
+
     uint8_t item_count = current->child_count;
     uint8_t current_index = get_selected_index();
+    uint8_t prev_index = (current_index + item_count - 1) % item_count;
+    uint8_t next_index = (current_index + 1) % item_count;
 
-    switch (keycode) {
-        case KC_W:
-        case KC_UP:
-            return set_selected_index((current_index + item_count - 1) % item_count);
-
-        case KC_S:
-        case KC_DOWN:
-            return set_selected_index((current_index + 1) % item_count);
-
-        case KC_D:
-        case KC_ENTER:
-        case KC_RIGHT:
-            set_operation_selection(current_index);
-            return true;
-
-        case KC_A:
-        case KC_ESC:
-        case KC_LEFT:
-            return cancel_operation(false);
-
-        default:
-            return false;
+    if (button_selection_mode) {
+        if (keycode == KC_A || keycode == KC_LEFT) {
+            return set_selected_index(prev_index);
+        }
+        if (keycode == KC_D || keycode == KC_RIGHT) {
+            return set_selected_index(next_index);
+        }
+    } else {
+        // Regular/list navigation mode
+        if (keycode == KC_W || keycode == KC_UP) {
+            return set_selected_index(prev_index);
+        }
+        if (keycode == KC_S || keycode == KC_DOWN) {
+            return set_selected_index(next_index);
+        }
     }
-    return true;
+
+    // Common handlers for both modes
+    if (keycode == KC_ENTER) {
+        set_operation_selection(current_index);
+        return true;
+    }
+
+    if (keycode == KC_ESC) {
+        return cancel_operation(false);
+    }
+
+    return false;
 }

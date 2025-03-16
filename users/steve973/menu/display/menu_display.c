@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <progmem.h>
 #include <action.h>
+#include "menu/core/state/menu_state.h"
 #include "menu/core/structure/menu_item.h"
 #include "quantum/logging/debug.h"
 #include "display_manager/display_manager.h"
@@ -14,7 +15,9 @@ static screen_content_t* convert_display_content(const display_content_t* displa
         dprintf("convert_display_content: display is NULL\n");
         return NULL;
     }
-    dprintf("Converting display content with %d elements\n", display->element_count);
+    dprintf("Converting display content:\n");
+    dprintf("  Title: '%s'\n", display->title);
+    dprintf("  Element Count: %d\n", display->element_count);
 
     // First allocate screen_content
     screen_content_t* screen = malloc(sizeof(screen_content_t));
@@ -32,10 +35,26 @@ static screen_content_t* convert_display_content(const display_content_t* displa
         // Convert each display element to screen element
         for (uint8_t i = 0; i < display->element_count; i++) {
             const display_element_t* src = &display->elements[i];
+            dprintf("  Element[%d]:\n", i);
+            dprintf("    Type: %s\n", src->is_selectable ? "LIST_ITEM/BUTTON (Selectable)" : "KEY/VALUE (Non-selectable)");
+            dprintf("    Text: '%s'\n", src->text);
+            dprintf("    Y-Pos: %d\n", i + 2);
+            content_type_t type;
+            switch (src->type) {
+                case DISPLAY_TYPE_LIST_ITEM:
+                    type = CONTENT_TYPE_LIST_ITEM;
+                    break;
+                case DISPLAY_TYPE_BUTTON:
+                    type = CONTENT_TYPE_BUTTON;
+                    break;
+                default:
+                    type = CONTENT_TYPE_KEY_VALUE;
+                    break;
+            }
             elements[i] = (screen_element_t){
-                .type = src->is_selectable ? CONTENT_TYPE_LIST : CONTENT_TYPE_KEY_VALUE,
+                .type = type,
                 .x = 0,
-                .y = i + 2,
+                .y = type == CONTENT_TYPE_BUTTON ? 0 : i + 2,
                 .content = {
                     .list_item = {
                         .text = {
@@ -81,7 +100,7 @@ screen_push_status_t create_menu_screen(const menu_item_t* menu_item, int8_t (*g
             screen->get_highlight_index = get_highlight_index;
             return push_screen((managed_screen_t){
                 .owner = owner,
-                .is_const = false,
+                .is_const = true,
                 .is_custom = false,
                 .display.content = screen,
                 .refresh_interval_ms = 0
@@ -130,8 +149,10 @@ screen_push_status_t create_operation_screen(const menu_item_t* item, operation_
     }
 
     screen_content_t* screen = convert_display_content(display);
+    screen->get_highlight_index = &get_selected_index;
     return push_screen((managed_screen_t){
         .owner = owner,
+        .is_const = true,
         .is_custom = false,
         .display.content = screen,
         .refresh_interval_ms = 0
